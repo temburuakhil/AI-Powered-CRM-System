@@ -4,7 +4,8 @@ import { DataTable } from "@/components/DataTable";
 import { LeadCounter } from "@/components/LeadCounter";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, Mail } from "lucide-react";
 
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1hyc1ZkQK9C6aVUvLe-jS-EiElQtIfKiUzDR0CNwv_oo/edit?usp=sharing";
 
@@ -15,7 +16,41 @@ const Index = () => {
   const [lastUpdated, setLastUpdated] = useState<Date>();
   const [refreshInterval] = useState(5000); // 5 seconds
   const [error, setError] = useState<string>("");
+  const [isStartingCampaign, setIsStartingCampaign] = useState(false);
   const { toast } = useToast();
+
+  const startEmailCampaign = async () => {
+    setIsStartingCampaign(true);
+    try {
+      // Production webhook URL - GET method
+      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/64d94d32-3580-4730-90f9-1e64895c90fe";
+      
+      console.log('Triggering n8n workflow...', webhookUrl);
+      
+      const response = await fetch(webhookUrl, {
+        method: 'GET',
+        mode: 'no-cors', // Handle CORS issues
+      });
+
+      console.log('Response:', response);
+
+      // With no-cors, we can't read the response, so we assume success
+      toast({
+        title: "✅ Email Campaign Started",
+        description: `Workflow triggered successfully for ${completedLeadsCount} completed leads.`,
+      });
+      
+    } catch (error) {
+      console.error('Error triggering workflow:', error);
+      toast({
+        title: "Error",
+        description: `Failed to start email campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsStartingCampaign(false);
+    }
+  };
 
   const fetchData = useCallback(async (url: string, showToast = true) => {
     if (!url) return;
@@ -180,6 +215,28 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {/* Email Campaign Button */}
+              <Button 
+                onClick={startEmailCampaign}
+                disabled={isStartingCampaign || data.length === 0}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isStartingCampaign ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Start Email Campaign
+                  </>
+                )}
+              </Button>
+
               {/* Animated Lead Counter */}
               <LeadCounter count={completedLeadsCount} />
               
