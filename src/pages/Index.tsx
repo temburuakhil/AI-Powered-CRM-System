@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Papa from "papaparse";
 import { DataTable } from "@/components/DataTable";
+import { LeadCounter } from "@/components/LeadCounter";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -88,6 +89,23 @@ const Index = () => {
     return () => clearInterval(interval);
   }, [isConnected, refreshInterval, fetchData]);
 
+  // Calculate completed leads count from "INTEREST FORM" column
+  const completedLeadsCount = useMemo(() => {
+    if (data.length === 0) return 0;
+    
+    // Find the column name that contains "interest" and "form" (case-insensitive)
+    const interestFormColumn = Object.keys(data[0]).find(key => 
+      key.toLowerCase().includes('interest') && key.toLowerCase().includes('form')
+    );
+    
+    if (!interestFormColumn) return 0;
+    
+    // Count rows where the interest form column value is "Completed"
+    return data.filter(row => 
+      String(row[interestFormColumn]).toLowerCase().trim() === "completed"
+    ).length;
+  }, [data]);
+
   if (isLoading && !isConnected) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center">
@@ -162,6 +180,9 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {/* Animated Lead Counter */}
+              <LeadCounter count={completedLeadsCount} />
+              
               <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200/60 dark:border-green-800/60 shadow-sm">
                 <div className="relative">
                   <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></div>
