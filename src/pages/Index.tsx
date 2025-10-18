@@ -5,7 +5,7 @@ import { LeadCounter } from "@/components/LeadCounter";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Mail } from "lucide-react";
+import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare } from "lucide-react";
 
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1hyc1ZkQK9C6aVUvLe-jS-EiElQtIfKiUzDR0CNwv_oo/edit?usp=sharing";
 
@@ -17,6 +17,9 @@ const Index = () => {
   const [refreshInterval] = useState(5000); // 5 seconds
   const [error, setError] = useState<string>("");
   const [isStartingCampaign, setIsStartingCampaign] = useState(false);
+  const [isStartingCallCampaign, setIsStartingCallCampaign] = useState(false);
+  const [isStartingWhatsAppCampaign, setIsStartingWhatsAppCampaign] = useState(false);
+  const [isStartingSMSCampaign, setIsStartingSMSCampaign] = useState(false);
   const { toast } = useToast();
 
   const startEmailCampaign = async () => {
@@ -25,23 +28,22 @@ const Index = () => {
       // Production webhook URL - GET method
       const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/64d94d32-3580-4730-90f9-1e64895c90fe";
       
-      console.log('Triggering n8n workflow...', webhookUrl);
+      console.log('Triggering Email Campaign workflow...', webhookUrl);
       
-      const response = await fetch(webhookUrl, {
-        method: 'GET',
-        mode: 'no-cors', // Handle CORS issues
-      });
+      // Use Image object to bypass CORS for GET requests
+      const img = new Image();
+      img.src = webhookUrl + '?t=' + Date.now();
+      
+      // Give it a moment to trigger
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      console.log('Response:', response);
-
-      // With no-cors, we can't read the response, so we assume success
       toast({
         title: "✅ Email Campaign Started",
         description: `Workflow triggered successfully for ${completedLeadsCount} completed leads.`,
       });
       
     } catch (error) {
-      console.error('Error triggering workflow:', error);
+      console.error('Error triggering email workflow:', error);
       toast({
         title: "Error",
         description: `Failed to start email campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -49,6 +51,102 @@ const Index = () => {
       });
     } finally {
       setIsStartingCampaign(false);
+    }
+  };
+
+  const startCallCampaign = async () => {
+    setIsStartingCallCampaign(true);
+    try {
+      // Production webhook URL - GET method
+      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/9ffc0f31-1f1b-4556-92a5-f4762baed323";
+      
+      console.log('Triggering Call Campaign workflow...', webhookUrl);
+      
+      // Use Image object to bypass CORS for GET requests
+      const img = new Image();
+      img.src = webhookUrl + '?t=' + Date.now();
+      
+      // Give it a moment to trigger
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      toast({
+        title: "📞 Call Campaign Started",
+        description: `Workflow triggered successfully for ${completedLeadsCount} completed leads.`,
+      });
+      
+    } catch (error) {
+      console.error('Error triggering call workflow:', error);
+      toast({
+        title: "Error",
+        description: `Failed to start call campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsStartingCallCampaign(false);
+    }
+  };
+
+  const startWhatsAppCampaign = async () => {
+    setIsStartingWhatsAppCampaign(true);
+    try {
+      // Production webhook URL - GET method
+      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/78ebcdc8-7562-42c0-bc92-6ac723e2ac4a";
+      
+      console.log('Triggering WhatsApp Campaign workflow...', webhookUrl);
+      
+      // Use Image object to bypass CORS for GET requests
+      const img = new Image();
+      img.src = webhookUrl + '?t=' + Date.now();
+      
+      // Give it a moment to trigger
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      toast({
+        title: "💬 WhatsApp Campaign Started",
+        description: `Workflow triggered successfully for ${completedLeadsCount} completed leads.`,
+      });
+      
+    } catch (error) {
+      console.error('Error triggering WhatsApp workflow:', error);
+      toast({
+        title: "Error",
+        description: `Failed to start WhatsApp campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsStartingWhatsAppCampaign(false);
+    }
+  };
+
+  const startSMSCampaign = async () => {
+    setIsStartingSMSCampaign(true);
+    try {
+      // Production webhook URL - GET method
+      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/950d3eeb-b0f1-4b1f-a2bc-572856f2e098";
+      
+      console.log('Triggering SMS Campaign workflow...', webhookUrl);
+      
+      // Use Image object to bypass CORS for GET requests
+      const img = new Image();
+      img.src = webhookUrl + '?t=' + Date.now();
+      
+      // Give it a moment to trigger
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      toast({
+        title: "📱 SMS Campaign Started",
+        description: `Workflow triggered successfully for ${completedLeadsCount} completed leads.`,
+      });
+      
+    } catch (error) {
+      console.error('Error triggering SMS workflow:', error);
+      toast({
+        title: "Error",
+        description: `Failed to start SMS campaign: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsStartingSMSCampaign(false);
     }
   };
 
@@ -233,6 +331,72 @@ const Index = () => {
                   <>
                     <Mail className="mr-2 h-4 w-4" />
                     Start Email Campaign
+                  </>
+                )}
+              </Button>
+
+              {/* Call Campaign Button */}
+              <Button 
+                onClick={startCallCampaign}
+                disabled={isStartingCallCampaign || data.length === 0}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isStartingCallCampaign ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <Phone className="mr-2 h-4 w-4" />
+                    Start Call Campaign
+                  </>
+                )}
+              </Button>
+
+              {/* WhatsApp Campaign Button */}
+              <Button 
+                onClick={startWhatsAppCampaign}
+                disabled={isStartingWhatsAppCampaign || data.length === 0}
+                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isStartingWhatsAppCampaign ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    Start WhatsApp Campaign
+                  </>
+                )}
+              </Button>
+
+              {/* SMS Campaign Button */}
+              <Button 
+                onClick={startSMSCampaign}
+                disabled={isStartingSMSCampaign || data.length === 0}
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isStartingSMSCampaign ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Start SMS Campaign
                   </>
                 )}
               </Button>
