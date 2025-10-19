@@ -350,14 +350,6 @@ const Training = () => {
               <MessageSquareText className="w-4 h-4" />
               View Feedback
             </Button>
-            <a
-              href={SHEET_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-auto text-sm text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              Open in Google Sheets →
-            </a>
           </div>
         </div>
       </div>
