@@ -5,7 +5,7 @@ import { LeadCounter } from "@/components/LeadCounter";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare, FileText } from "lucide-react";
+import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare, FileText, MessageSquareText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1hyc1ZkQK9C6aVUvLe-jS-EiElQtIfKiUzDR0CNwv_oo/edit?usp=sharing";
@@ -406,6 +406,15 @@ const Index = () => {
               >
                 <FileText className="mr-2 h-4 w-4" />
                 View Transcripts
+              </Button>
+
+              {/* View Feedback Button */}
+              <Button 
+                onClick={() => navigate("/feedback")}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <MessageSquareText className="mr-2 h-4 w-4" />
+                View Feedback
               </Button>
 
               {/* Animated Lead Counter */}
