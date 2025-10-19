@@ -8,9 +8,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Search, ArrowUpDown } from "lucide-react";
 
 interface DataTableProps {
   data: Record<string, any>[];

@@ -112,9 +112,9 @@ const Transcripts = () => {
             <h3 className="text-xl font-bold text-slate-900 dark:text-white">Error Loading Transcripts</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{error}</p>
           </div>
-          <Button onClick={() => navigate("/")} className="w-full">
+          <Button onClick={() => navigate("/training")} className="w-full">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
+            Back to Training
           </Button>
         </div>
       </div>
@@ -129,12 +129,12 @@ const Transcripts = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/training")}
                 variant="outline"
                 className="hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
+                Back to Training
               </Button>
               <div className="relative">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
