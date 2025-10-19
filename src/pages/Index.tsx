@@ -8,9 +8,13 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare } from "lucide-react";
 
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1hyc1ZkQK9C6aVUvLe-jS-EiElQtIfKiUzDR0CNwv_oo/edit?usp=sharing";
+const SHEET_ID = "1hyc1ZkQK9C6aVUvLe-jS-EiElQtIfKiUzDR0CNwv_oo";
+const SHEET1_GID = "0"; // Before Course Enrollment (default sheet)
+const SHEET2_GID = "394964549"; // Course Completion
 
 const Index = () => {
   const [data, setData] = useState<Record<string, any>[]>([]);
+  const [courseCompletionData, setCourseCompletionData] = useState<Record<string, any>[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>();
@@ -20,6 +24,8 @@ const Index = () => {
   const [isStartingCallCampaign, setIsStartingCallCampaign] = useState(false);
   const [isStartingWhatsAppCampaign, setIsStartingWhatsAppCampaign] = useState(false);
   const [isStartingSMSCampaign, setIsStartingSMSCampaign] = useState(false);
+  const [isStartingWhatsAppFeedback, setIsStartingWhatsAppFeedback] = useState(false);
+  const [isStartingEmailFeedback, setIsStartingEmailFeedback] = useState(false);
   const { toast } = useToast();
 
   const startEmailCampaign = async () => {
@@ -150,6 +156,70 @@ const Index = () => {
     }
   };
 
+  const startWhatsAppFeedback = async () => {
+    setIsStartingWhatsAppFeedback(true);
+    try {
+      // Production webhook URL - GET method
+      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/03bdef8b-fd15-4cc1-9653-42d99b3dfdd7";
+      
+      console.log('Triggering WhatsApp Feedback workflow...', webhookUrl);
+      
+      // Use Image object to bypass CORS for GET requests
+      const img = new Image();
+      img.src = webhookUrl + '?t=' + Date.now();
+      
+      // Give it a moment to trigger
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      toast({
+        title: "💬 WhatsApp Feedback Started",
+        description: `Feedback collection workflow triggered successfully for ${courseCompletionData.length} completed courses.`,
+      });
+      
+    } catch (error) {
+      console.error('Error triggering WhatsApp Feedback workflow:', error);
+      toast({
+        title: "Error",
+        description: `Failed to start WhatsApp feedback: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsStartingWhatsAppFeedback(false);
+    }
+  };
+
+  const startEmailFeedback = async () => {
+    setIsStartingEmailFeedback(true);
+    try {
+      // Production webhook URL - GET method
+      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/3d51c0ec-8f8c-466a-89b0-0982646ebbb3";
+      
+      console.log('Triggering Email Feedback workflow...', webhookUrl);
+      
+      // Use Image object to bypass CORS for GET requests
+      const img = new Image();
+      img.src = webhookUrl + '?t=' + Date.now();
+      
+      // Give it a moment to trigger
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      toast({
+        title: "📧 Email Feedback Started",
+        description: `Feedback collection workflow triggered successfully for ${courseCompletionData.length} completed courses.`,
+      });
+      
+    } catch (error) {
+      console.error('Error triggering Email Feedback workflow:', error);
+      toast({
+        title: "Error",
+        description: `Failed to start email feedback: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsStartingEmailFeedback(false);
+    }
+  };
+
   const fetchData = useCallback(async (url: string, showToast = true) => {
     if (!url) return;
 
@@ -157,19 +227,18 @@ const Index = () => {
     setError("");
 
     try {
-      // Convert Google Sheets URL to CSV export URL if needed
-      let csvUrl = url;
-      if (url.includes("docs.google.com/spreadsheets")) {
-        const sheetId = url.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1];
-        if (sheetId) {
-          csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
-        }
-      }
+      // Fetch Sheet 1 - Before Course Enrollment
+      const csvUrl1 = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET1_GID}`;
+      const response1 = await fetch(csvUrl1);
+      const csvText1 = await response1.text();
 
-      const response = await fetch(csvUrl);
-      const csvText = await response.text();
+      // Fetch Sheet 2 - Course Completion
+      const csvUrl2 = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET2_GID}`;
+      const response2 = await fetch(csvUrl2);
+      const csvText2 = await response2.text();
 
-      Papa.parse(csvText, {
+      // Parse Sheet 1
+      Papa.parse(csvText1, {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
@@ -177,19 +246,31 @@ const Index = () => {
             setData(results.data);
             setIsConnected(true);
             setLastUpdated(new Date());
-            if (showToast) {
-              toast({
-                title: "Data refreshed",
-                description: `Successfully loaded ${results.data.length} records`,
-              });
-            }
-          } else {
-            setError("No data found in the sheet");
           }
         },
         error: (error) => {
-          setError(`Failed to parse CSV: ${error.message}`);
+          setError(`Failed to parse Sheet 1: ${error.message}`);
           setIsConnected(false);
+        },
+      });
+
+      // Parse Sheet 2
+      Papa.parse(csvText2, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          if (results.data && results.data.length > 0) {
+            setCourseCompletionData(results.data);
+            if (showToast) {
+              toast({
+                title: "Data refreshed",
+                description: `Successfully loaded ${results.data.length} records from both sheets`,
+              });
+            }
+          }
+        },
+        error: (error) => {
+          console.error(`Failed to parse Sheet 2: ${error.message}`);
         },
       });
     } catch (err) {
@@ -339,100 +420,188 @@ const Index = () => {
 
           {/* Bottom Row - Campaign Buttons */}
           <div className="flex items-center gap-3 flex-wrap">
-            {/* Email Campaign Button */}
-            <Button 
-              onClick={startEmailCampaign}
-              disabled={isStartingCampaign || data.length === 0}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isStartingCampaign ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Starting...
-                </>
-              ) : (
-                <>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Start Email Campaign
-                </>
-              )}
-            </Button>
-
-            {/* Call Campaign Button */}
-            <Button 
-              onClick={startCallCampaign}
-              disabled={isStartingCallCampaign || data.length === 0}
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isStartingCallCampaign ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Starting...
-                </>
-              ) : (
-                <>
-                  <Phone className="mr-2 h-4 w-4" />
-                  Start Call Campaign
-                </>
-              )}
-            </Button>
-
-            {/* WhatsApp Campaign Button */}
-            <Button 
-              onClick={startWhatsAppCampaign}
-              disabled={isStartingWhatsAppCampaign || data.length === 0}
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isStartingWhatsAppCampaign ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Starting...
-                </>
-              ) : (
-                <>
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  Start WhatsApp Campaign
-                </>
-              )}
-            </Button>
-
-            {/* SMS Campaign Button */}
-            <Button 
-              onClick={startSMSCampaign}
-              disabled={isStartingSMSCampaign || data.length === 0}
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isStartingSMSCampaign ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Starting...
-                </>
-              ) : (
-                <>
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Start SMS Campaign
-                </>
-              )}
-            </Button>
+            {/* Buttons moved to Before Course Enrollment section */}
           </div>
         </div>
       </div>
 
       {/* Main Content with Better Spacing */}
-      <div className="max-w-7xl mx-auto px-8 py-10">
-        <DataTable data={data} />
+      <div className="max-w-7xl mx-auto px-8 py-10 space-y-12">
+        {/* Section 1: Before Course Enrollment */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-1.5 rounded-full bg-gradient-to-b from-blue-500 to-purple-600"></div>
+              <div>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 dark:from-white dark:via-slate-200 dark:to-slate-300 bg-clip-text text-transparent">
+                  Before Course Enrollment
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                  Initial leads and enrollment data
+                </p>
+              </div>
+            </div>
+
+            {/* Campaign Buttons */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Email Campaign Button */}
+              <Button 
+                onClick={startEmailCampaign}
+                disabled={isStartingCampaign || data.length === 0}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isStartingCampaign ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Start Email Campaign
+                  </>
+                )}
+              </Button>
+
+              {/* Call Campaign Button */}
+              <Button 
+                onClick={startCallCampaign}
+                disabled={isStartingCallCampaign || data.length === 0}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isStartingCallCampaign ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <Phone className="mr-2 h-4 w-4" />
+                    Start Call Campaign
+                  </>
+                )}
+              </Button>
+
+              {/* WhatsApp Campaign Button */}
+              <Button 
+                onClick={startWhatsAppCampaign}
+                disabled={isStartingWhatsAppCampaign || data.length === 0}
+                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isStartingWhatsAppCampaign ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    Start WhatsApp Campaign
+                  </>
+                )}
+              </Button>
+
+              {/* SMS Campaign Button */}
+              <Button 
+                onClick={startSMSCampaign}
+                disabled={isStartingSMSCampaign || data.length === 0}
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isStartingSMSCampaign ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Start SMS Campaign
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+          <DataTable data={data} />
+        </div>
+
+        {/* Section 2: Course Completion */}
+        {courseCompletionData.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-1.5 rounded-full bg-gradient-to-b from-green-500 to-emerald-600"></div>
+                <div>
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 dark:from-white dark:via-slate-200 dark:to-slate-300 bg-clip-text text-transparent">
+                    After Course Completion
+                  </h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                    Completed courses and feedback data
+                  </p>
+                </div>
+              </div>
+              
+              {/* Feedback Buttons */}
+              <div className="flex items-center gap-3">
+                {/* Email Feedback Button */}
+                <Button 
+                  onClick={startEmailFeedback}
+                  disabled={isStartingEmailFeedback || courseCompletionData.length === 0}
+                  className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isStartingEmailFeedback ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Starting...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Email Feedback
+                    </>
+                  )}
+                </Button>
+
+                {/* WhatsApp Feedback Button */}
+                <Button 
+                  onClick={startWhatsAppFeedback}
+                  disabled={isStartingWhatsAppFeedback || courseCompletionData.length === 0}
+                  className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isStartingWhatsAppFeedback ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Starting...
+                    </>
+                  ) : (
+                    <>
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      WhatsApp Feedback
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+            <DataTable data={courseCompletionData} />
+          </div>
+        )}
       </div>
     </div>
   );
