@@ -5,7 +5,8 @@ import { LeadCounter } from "@/components/LeadCounter";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare } from "lucide-react";
+import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1hyc1ZkQK9C6aVUvLe-jS-EiElQtIfKiUzDR0CNwv_oo/edit?usp=sharing";
 const SHEET_ID = "1hyc1ZkQK9C6aVUvLe-jS-EiElQtIfKiUzDR0CNwv_oo";
@@ -27,6 +28,7 @@ const Index = () => {
   const [isStartingWhatsAppFeedback, setIsStartingWhatsAppFeedback] = useState(false);
   const [isStartingEmailFeedback, setIsStartingEmailFeedback] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const startEmailCampaign = async () => {
     setIsStartingCampaign(true);
@@ -397,6 +399,15 @@ const Index = () => {
 
             {/* Right Side - Status Indicators */}
             <div className="flex items-center gap-4">
+              {/* View Transcripts Button */}
+              <Button 
+                onClick={() => navigate("/transcripts")}
+                className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                View Transcripts
+              </Button>
+
               {/* Animated Lead Counter */}
               <LeadCounter count={completedLeadsCount} />
               
