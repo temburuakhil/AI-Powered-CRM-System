@@ -1,8 +1,133 @@
 import { useNavigate } from "react-router-dom";
 import { BookOpen, GraduationCap, Users, FileText } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import Papa from "papaparse";
+
+// Sheet configurations for all three portals
+const SCHEMES_SHEET_ID = "1y7LyjjyKRMX4XSTjPA3lu4hM9gMl27e2QElXiG4FZp8";
+const SCHOLARSHIPS_SHEET_ID = "1mKHy1nYMGc_EGkA7X1T8609SPYBkhdBMwYlZSzfPfqk";
+const TRAINING_SHEET_ID = "1hyc1ZkQK9C6aVUvLe-jS-EiElQtIfKiUzDR0CNwv_oo";
+const TRAINING_SHEET1_GID = "0"; // Before Course Enrollment
+const TRAINING_SHEET2_GID = "394964549"; // Course Completion
 
 const AdminPortal = () => {
   const navigate = useNavigate();
+  // Initialize from localStorage to avoid showing 0 initially
+  const [apiHitCount, setApiHitCount] = useState(() => {
+    return parseInt(localStorage.getItem("apiHitCount") || "0");
+  });
+
+  const countCompletedStatuses = useCallback(async () => {
+    try {
+      let totalCompleted = 0;
+
+      // Helper function to count completed in a sheet
+      const countSheetCompleted = async (sheetId: string, gid?: string) => {
+        const csvUrl = gid 
+          ? `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`
+          : `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+        
+        const response = await fetch(csvUrl);
+        const csvText = await response.text();
+
+        return new Promise<number>((resolve) => {
+          Papa.parse(csvText, {
+            complete: (results) => {
+              const data = results.data as string[][];
+              let count = 0;
+              if (data.length > 1) {
+                // Count all "Completed" values in all columns (skip header row)
+                for (let i = 1; i < data.length; i++) {
+                  for (let j = 0; j < data[i].length; j++) {
+                    const value = data[i][j]?.toString().toLowerCase().trim();
+                    if (value === "completed") {
+                      count++;
+                    }
+                  }
+                }
+              }
+              resolve(count);
+            },
+            error: () => resolve(0),
+          });
+        });
+      };
+
+      // Count from Schemes sheet
+      const schemesCount = await countSheetCompleted(SCHEMES_SHEET_ID);
+      totalCompleted += schemesCount;
+
+      // Count from Scholarships sheet
+      const scholarshipsCount = await countSheetCompleted(SCHOLARSHIPS_SHEET_ID);
+      totalCompleted += scholarshipsCount;
+
+      // Count from Training - Before Course Enrollment
+      const training1Count = await countSheetCompleted(TRAINING_SHEET_ID, TRAINING_SHEET1_GID);
+      totalCompleted += training1Count;
+
+      // Count from Training - Course Completion
+      const training2Count = await countSheetCompleted(TRAINING_SHEET_ID, TRAINING_SHEET2_GID);
+      totalCompleted += training2Count;
+
+      console.log(`📊 Breakdown - Schemes: ${schemesCount}, Scholarships: ${scholarshipsCount}, Training1: ${training1Count}, Training2: ${training2Count}`);
+      console.log(`📈 Total Completed in all sheets: ${totalCompleted}`);
+
+      // Get stored values
+      const storedApiHitCount = parseInt(localStorage.getItem("apiHitCount") || "0");
+      const storedPreviousTotal = parseInt(localStorage.getItem("previousTotal") || "0");
+      
+      // Check if stored values seem incorrect (apiHitCount > totalCompleted by more than reasonable margin)
+      // This can happen if there was testing/debugging that caused incorrect accumulation
+      if (storedApiHitCount > totalCompleted && (storedApiHitCount - totalCompleted) > 10) {
+        console.log(`🔄 Resetting API Hit Count from ${storedApiHitCount} to current total ${totalCompleted}`);
+        localStorage.setItem("previousTotal", totalCompleted.toString());
+        localStorage.setItem("apiHitCount", totalCompleted.toString());
+        setApiHitCount(totalCompleted);
+        return;
+      }
+      
+      // First time initialization
+      if (storedPreviousTotal === 0 && storedApiHitCount === 0) {
+        // First run - initialize both to current total
+        localStorage.setItem("previousTotal", totalCompleted.toString());
+        localStorage.setItem("apiHitCount", totalCompleted.toString());
+        setApiHitCount(totalCompleted);
+        console.log(`🎬 Initial setup - API Hit Count set to: ${totalCompleted}`);
+      } else {
+        // Calculate new completions (only if total increased)
+        const newCompletions = Math.max(0, totalCompleted - storedPreviousTotal);
+        
+        // Add new completions to cumulative count
+        const updatedApiHitCount = storedApiHitCount + newCompletions;
+        
+        // Update stored values
+        localStorage.setItem("previousTotal", totalCompleted.toString());
+        localStorage.setItem("apiHitCount", updatedApiHitCount.toString());
+        setApiHitCount(updatedApiHitCount);
+        
+        if (newCompletions > 0) {
+          console.log(`✅ New completions detected: +${newCompletions}. API Hit Count: ${storedApiHitCount} → ${updatedApiHitCount}`);
+        } else {
+          console.log(`⏸️ No new completions. Current: ${totalCompleted}, API Hit Count: ${updatedApiHitCount}`);
+        }
+      }
+    } catch (error) {
+      console.error("Error counting completed statuses:", error);
+      // Load from localStorage if fetch fails
+      const storedMaxCount = parseInt(localStorage.getItem("apiHitCount") || "0");
+      setApiHitCount(storedMaxCount);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Initial load
+    countCompletedStatuses();
+    
+    // Refresh every 5 seconds
+    const interval = setInterval(countCompletedStatuses, 5000);
+    
+    return () => clearInterval(interval);
+  }, [countCompletedStatuses]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -26,12 +151,26 @@ const AdminPortal = () => {
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Comprehensive management dashboard</p>
               </div>
             </div>
-            <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200/60 dark:border-blue-800/60 shadow-sm">
-              <div className="relative">
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></div>
-                <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping"></div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200/60 dark:border-purple-800/60 shadow-sm">
+                <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span className="text-sm font-semibold text-purple-700 dark:text-purple-400">API Hit Count: {apiHitCount}</span>
               </div>
-              <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">Live</span>
+              <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-orange-50 to-pink-50 dark:from-orange-900/20 dark:to-pink-900/20 border border-orange-200/60 dark:border-orange-800/60 shadow-sm">
+                <svg className="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="text-sm font-semibold text-orange-700 dark:text-orange-400">No. Of Campaigns running: 4</span>
+              </div>
+              <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200/60 dark:border-blue-800/60 shadow-sm">
+                <div className="relative">
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></div>
+                  <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping"></div>
+                </div>
+                <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">Live</span>
+              </div>
             </div>
           </div>
         </div>
@@ -71,6 +210,18 @@ const AdminPortal = () => {
                   <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
                     Manage government schemes and scholarship programs
                   </p>
+                  <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800">
+                    <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Model: GPT 4.1</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800">
+                    <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span className="text-sm font-semibold text-green-700 dark:text-green-400">2 Campaigns Running</span>
+                  </div>
                 </div>
 
                 <div className="flex gap-4 pt-4">
@@ -118,6 +269,18 @@ const AdminPortal = () => {
                   <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
                     Training programs and skill development initiatives
                   </p>
+                  <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 border border-rose-200 dark:border-rose-800">
+                    <svg className="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <span className="text-sm font-semibold text-rose-700 dark:text-rose-400">Model: GPT 4.1</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border border-orange-200 dark:border-orange-800">
+                    <svg className="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span className="text-sm font-semibold text-orange-700 dark:text-orange-400">2 Campaigns Running</span>
+                  </div>
                 </div>
 
                 <div className="flex gap-4 pt-4">
