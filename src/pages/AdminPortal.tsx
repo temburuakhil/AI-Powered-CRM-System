@@ -1,73 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { BookOpen, GraduationCap, Users, FileText, Plus, FolderKanban, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
-interface Manager {
-  id: string;
-  name: string;
-  createdAt: string;
-  projects: any[];
-}
+import { BookOpen, GraduationCap, Users, FileText } from "lucide-react";
 
 const AdminPortal = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [customManagers, setCustomManagers] = useState<Manager[]>([]);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [managerToDelete, setManagerToDelete] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadManagers = () => {
-      const stored = localStorage.getItem("customManagers");
-      if (stored) {
-        setCustomManagers(JSON.parse(stored));
-      }
-    };
-    
-    loadManagers();
-    
-    // Listen for storage changes to update when new managers are created
-    window.addEventListener("storage", loadManagers);
-    return () => window.removeEventListener("storage", loadManagers);
-  }, []);
-
-  const handleDeleteManager = (managerId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setManagerToDelete(managerId);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDeleteManager = () => {
-    if (!managerToDelete) return;
-
-    const stored = localStorage.getItem("customManagers");
-    if (stored) {
-      const managers: Manager[] = JSON.parse(stored);
-      const managerToRemove = managers.find(m => m.id === managerToDelete);
-      const updatedManagers = managers.filter(m => m.id !== managerToDelete);
-      localStorage.setItem("customManagers", JSON.stringify(updatedManagers));
-      setCustomManagers(updatedManagers);
-      
-      toast({
-        title: "Manager Deleted",
-        description: `"${managerToRemove?.name}" has been removed successfully.`,
-      });
-    }
-    
-    setDeleteDialogOpen(false);
-    setManagerToDelete(null);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -91,12 +26,26 @@ const AdminPortal = () => {
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Comprehensive management dashboard</p>
               </div>
             </div>
-            <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200/60 dark:border-blue-800/60 shadow-sm">
-              <div className="relative">
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></div>
-                <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping"></div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200/60 dark:border-purple-800/60 shadow-sm">
+                <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span className="text-sm font-semibold text-purple-700 dark:text-purple-400">API Hit Count: {apiHitCount}</span>
               </div>
-              <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">Live</span>
+              <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-orange-50 to-pink-50 dark:from-orange-900/20 dark:to-pink-900/20 border border-orange-200/60 dark:border-orange-800/60 shadow-sm">
+                <svg className="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="text-sm font-semibold text-orange-700 dark:text-orange-400">No. Of Campaigns running: 4</span>
+              </div>
+              <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200/60 dark:border-blue-800/60 shadow-sm">
+                <div className="relative">
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></div>
+                  <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping"></div>
+                </div>
+                <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">Live</span>
+              </div>
             </div>
           </div>
         </div>
@@ -136,6 +85,18 @@ const AdminPortal = () => {
                   <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
                     Manage government schemes and scholarship programs
                   </p>
+                  <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800">
+                    <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Model: GPT 4.1</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800">
+                    <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span className="text-sm font-semibold text-green-700 dark:text-green-400">2 Campaigns Running</span>
+                  </div>
                 </div>
 
                 <div className="flex gap-4 pt-4">
@@ -183,6 +144,18 @@ const AdminPortal = () => {
                   <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
                     Training programs and skill development initiatives
                   </p>
+                  <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 border border-rose-200 dark:border-rose-800">
+                    <svg className="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <span className="text-sm font-semibold text-rose-700 dark:text-rose-400">Model: GPT 4.1</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border border-orange-200 dark:border-orange-800">
+                    <svg className="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span className="text-sm font-semibold text-orange-700 dark:text-orange-400">2 Campaigns Running</span>
+                  </div>
                 </div>
 
                 <div className="flex gap-4 pt-4">
