@@ -9,6 +9,10 @@ import Scholarships from "./pages/Scholarships";
 import RegistrationDetails from "./pages/RegistrationDetails";
 import Transcripts from "./pages/Transcripts";
 import Feedback from "./pages/Feedback";
+import CreateManager from "./pages/CreateManager";
+import ManagerDetail from "./pages/ManagerDetail";
+import CreateProject from "./pages/CreateProject";
+import ProjectDetail from "./pages/ProjectDetail";
 
 const queryClient = new QueryClient();
 
@@ -26,9 +30,14 @@ const App = () => (
         <Route path="/scholarship-registration-details" element={<RegistrationDetails />} />
         <Route path="/transcripts" element={<Transcripts />} />
         <Route path="/feedback" element={<Feedback />} />
+        <Route path="/create-manager" element={<CreateManager />} />
+        <Route path="/manager/:managerId" element={<ManagerDetail />} />
+        <Route path="/manager/:managerId/create-project" element={<CreateProject />} />
+        <Route path="/manager/:managerId/project/:projectId" element={<ProjectDetail />} />
       </Routes>
     </BrowserRouter>
   </QueryClientProvider>
 );
 
 export default App;
+
