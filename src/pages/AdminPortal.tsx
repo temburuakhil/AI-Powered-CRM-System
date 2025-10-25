@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { BookOpen, GraduationCap, Users, FileText, Plus, FolderKanban, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Papa from "papaparse";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,12 +19,124 @@ interface CustomManager {
   projects: any[];
 }
 
+// Sheet configurations for all three portals
+const SCHEMES_SHEET_ID = "1y7LyjjyKRMX4XSTjPA3lu4hM9gMl27e2QElXiG4FZp8";
+const SCHOLARSHIPS_SHEET_ID = "1mKHy1nYMGc_EGkA7X1T8609SPYBkhdBMwYlZSzfPfqk";
+const TRAINING_SHEET_ID = "1hyc1ZkQK9C6aVUvLe-jS-EiElQtIfKiUzDR0CNwv_oo";
+const TRAINING_SHEET1_GID = "0"; // Before Course Enrollment
+const TRAINING_SHEET2_GID = "394964549"; // Course Completion
+
 const AdminPortal = () => {
   const navigate = useNavigate();
-  const [apiHitCount] = useState(1247); // Mock data
+  // Initialize from localStorage to avoid showing 0 initially
+  const [apiHitCount, setApiHitCount] = useState(() => {
+    return parseInt(localStorage.getItem("apiHitCount") || "0");
+  });
   const [customManagers, setCustomManagers] = useState<CustomManager[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [managerToDelete, setManagerToDelete] = useState<string | null>(null);
+
+  const countCompletedStatuses = useCallback(async () => {
+    try {
+      let totalCompleted = 0;
+
+      // Helper function to count completed in a sheet
+      const countSheetCompleted = async (sheetId: string, gid?: string) => {
+        const csvUrl = gid 
+          ? `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`
+          : `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+        
+        const response = await fetch(csvUrl);
+        const csvText = await response.text();
+
+        return new Promise<number>((resolve) => {
+          Papa.parse(csvText, {
+            complete: (results) => {
+              const data = results.data as string[][];
+              let count = 0;
+              if (data.length > 1) {
+                // Count all "Completed" values in all columns (skip header row)
+                for (let i = 1; i < data.length; i++) {
+                  for (let j = 0; j < data[i].length; j++) {
+                    const value = data[i][j]?.toString().toLowerCase().trim();
+                    if (value === "completed") {
+                      count++;
+                    }
+                  }
+                }
+              }
+              resolve(count);
+            },
+            error: () => resolve(0),
+          });
+        });
+      };
+
+      // Count from Schemes sheet
+      const schemesCount = await countSheetCompleted(SCHEMES_SHEET_ID);
+      totalCompleted += schemesCount;
+
+      // Count from Scholarships sheet
+      const scholarshipsCount = await countSheetCompleted(SCHOLARSHIPS_SHEET_ID);
+      totalCompleted += scholarshipsCount;
+
+      // Count from Training - Before Course Enrollment
+      const training1Count = await countSheetCompleted(TRAINING_SHEET_ID, TRAINING_SHEET1_GID);
+      totalCompleted += training1Count;
+
+      // Count from Training - Course Completion
+      const training2Count = await countSheetCompleted(TRAINING_SHEET_ID, TRAINING_SHEET2_GID);
+      totalCompleted += training2Count;
+
+      console.log(`📊 Breakdown - Schemes: ${schemesCount}, Scholarships: ${scholarshipsCount}, Training1: ${training1Count}, Training2: ${training2Count}`);
+      console.log(`📈 Total Completed in all sheets: ${totalCompleted}`);
+
+      // Get stored values
+      const storedApiHitCount = parseInt(localStorage.getItem("apiHitCount") || "0");
+      const storedPreviousTotal = parseInt(localStorage.getItem("previousTotal") || "0");
+      
+      // Check if stored values seem incorrect (apiHitCount > totalCompleted by more than reasonable margin)
+      // This can happen if there was testing/debugging that caused incorrect accumulation
+      if (storedApiHitCount > totalCompleted && (storedApiHitCount - totalCompleted) > 10) {
+        console.log(`🔄 Resetting API Hit Count from ${storedApiHitCount} to current total ${totalCompleted}`);
+        localStorage.setItem("previousTotal", totalCompleted.toString());
+        localStorage.setItem("apiHitCount", totalCompleted.toString());
+        setApiHitCount(totalCompleted);
+        return;
+      }
+      
+      // First time initialization
+      if (storedPreviousTotal === 0 && storedApiHitCount === 0) {
+        // First run - initialize both to current total
+        localStorage.setItem("previousTotal", totalCompleted.toString());
+        localStorage.setItem("apiHitCount", totalCompleted.toString());
+        setApiHitCount(totalCompleted);
+        console.log(`🎬 Initial setup - API Hit Count set to: ${totalCompleted}`);
+      } else {
+        // Calculate new completions (only if total increased)
+        const newCompletions = Math.max(0, totalCompleted - storedPreviousTotal);
+        
+        // Add new completions to cumulative count
+        const updatedApiHitCount = storedApiHitCount + newCompletions;
+        
+        // Update stored values
+        localStorage.setItem("previousTotal", totalCompleted.toString());
+        localStorage.setItem("apiHitCount", updatedApiHitCount.toString());
+        setApiHitCount(updatedApiHitCount);
+        
+        if (newCompletions > 0) {
+          console.log(`✅ New completions detected: +${newCompletions}. API Hit Count: ${storedApiHitCount} → ${updatedApiHitCount}`);
+        } else {
+          console.log(`⏸️ No new completions. Current: ${totalCompleted}, API Hit Count: ${updatedApiHitCount}`);
+        }
+      }
+    } catch (error) {
+      console.error("Error counting completed statuses:", error);
+      // Load from localStorage if fetch fails
+      const storedMaxCount = parseInt(localStorage.getItem("apiHitCount") || "0");
+      setApiHitCount(storedMaxCount);
+    }
+  }, []);
 
   // Load custom managers from localStorage
   useEffect(() => {
@@ -40,6 +153,17 @@ const AdminPortal = () => {
     };
     loadManagers();
   }, []);
+
+  // Fetch API hit count from Google Sheets
+  useEffect(() => {
+    // Initial load
+    countCompletedStatuses();
+    
+    // Refresh every 5 seconds
+    const interval = setInterval(countCompletedStatuses, 5000);
+    
+    return () => clearInterval(interval);
+  }, [countCompletedStatuses]);
 
   const handleDeleteManager = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
