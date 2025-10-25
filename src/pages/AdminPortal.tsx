@@ -1,8 +1,61 @@
 import { useNavigate } from "react-router-dom";
-import { BookOpen, GraduationCap, Users, FileText } from "lucide-react";
+import { BookOpen, GraduationCap, Users, FileText, Plus, FolderKanban, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+interface CustomManager {
+  id: string;
+  name: string;
+  projects: any[];
+}
 
 const AdminPortal = () => {
   const navigate = useNavigate();
+  const [apiHitCount] = useState(1247); // Mock data
+  const [customManagers, setCustomManagers] = useState<CustomManager[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [managerToDelete, setManagerToDelete] = useState<string | null>(null);
+
+  // Load custom managers from localStorage
+  useEffect(() => {
+    const loadManagers = () => {
+      const stored = localStorage.getItem('customManagers');
+      if (stored) {
+        try {
+          const managers = JSON.parse(stored);
+          setCustomManagers(managers);
+        } catch (error) {
+          console.error('Error loading managers:', error);
+        }
+      }
+    };
+    loadManagers();
+  }, []);
+
+  const handleDeleteManager = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setManagerToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteManager = () => {
+    if (managerToDelete) {
+      const updatedManagers = customManagers.filter(m => m.id !== managerToDelete);
+      setCustomManagers(updatedManagers);
+      localStorage.setItem('customManagers', JSON.stringify(updatedManagers));
+      setManagerToDelete(null);
+    }
+    setDeleteDialogOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
