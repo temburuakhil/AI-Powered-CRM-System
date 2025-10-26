@@ -29,6 +29,14 @@ const Training = () => {
   const [whatsappFeedbackLoading, setWhatsappFeedbackLoading] = useState(false);
   const [emailFeedbackLoading, setEmailFeedbackLoading] = useState(false);
 
+  // Load custom managers from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem("customManagers");
+    if (stored) {
+      try { setCustomManagers(JSON.parse(stored)); } catch {}
+    }
+  }, []);
+
   const sendEmailCampaign = async () => {
     setEmailLoading(true);
     try {
@@ -320,18 +328,19 @@ const Training = () => {
         </header>
 
         {/* Main Content */}
-        <div className="max-w-[1800px] mx-auto p-8 space-y-8">
-          <div className="flex items-center justify-between">
+        <div className="max-w-[1800px] mx-auto p-6 space-y-6">
+          {/* Page Header */}
+          <div className="flex items-center justify-between pb-4 border-b border-[#30363d]">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center">
-                <BookOpen className="w-4 h-4 text-white" />
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold">OCAC Training CRM</h1>
-                <p className="text-xs text-[#7d8590]">Odisha Computer Application Centre - Training Dashboard</p>
+                <h1 className="text-2xl font-semibold text-[#e6edf3]">OCAC Training CRM</h1>
+                <p className="text-sm text-[#7d8590]">Odisha Computer Application Centre - Training Dashboard</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-xs text-[#7d8590]">
+            <div className="flex items-center gap-2 text-sm text-[#7d8590]">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3fb950] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3fb950]"></span>
@@ -342,9 +351,11 @@ const Training = () => {
 
           {/* Before Course Enrollment Section */}
           <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-[#e6edf3]">Before Course Enrollment</h2>
-              <p className="text-sm text-[#7d8590] mt-1">Lead generation and enrollment tracking</p>
+            <div className="flex items-center justify-between pt-2">
+              <div>
+                <h2 className="text-xl font-bold text-[#e6edf3]">Campaign Actions</h2>
+                <p className="text-sm text-[#7d8590] mt-1">Send notifications to leads before enrollment</p>
+              </div>
             </div>
             
             {/* Campaign Buttons */}
@@ -367,7 +378,7 @@ const Training = () => {
                   </div>
                   <div className="flex-1 text-left">
                     <div className="text-sm font-semibold text-[#e6edf3] group-hover:text-[#ea4335] transition-colors">
-                      {emailLoading ? 'Sending...' : 'Email Campaign'}
+                      {emailLoading ? 'Sending...' : 'Send Email'}
                     </div>
                     <div className="text-xs text-[#7d8590]">Notify via email</div>
                   </div>
@@ -392,7 +403,7 @@ const Training = () => {
                   </div>
                   <div className="flex-1 text-left">
                     <div className="text-sm font-semibold text-[#e6edf3] group-hover:text-[#1f6feb] transition-colors">
-                      {callLoading ? 'Calling...' : 'Call Campaign'}
+                      {callLoading ? 'Calling...' : 'Make Calls'}
                     </div>
                     <div className="text-xs text-[#7d8590]">Voice outreach</div>
                   </div>
@@ -442,7 +453,7 @@ const Training = () => {
                   </div>
                   <div className="flex-1 text-left">
                     <div className="text-sm font-semibold text-[#e6edf3] group-hover:text-[#a371f7] transition-colors">
-                      {smsLoading ? 'Sending...' : 'SMS Campaign'}
+                      {smsLoading ? 'Sending...' : 'Send SMS'}
                     </div>
                     <div className="text-xs text-[#7d8590]">Text messages</div>
                   </div>
@@ -451,13 +462,27 @@ const Training = () => {
             </div>
           </div>
 
-          <DataTable data={data} />
+          {/* Search and Data Table */}
+          <div className="space-y-4">
+            <div className="bg-[#0d1117] border border-[#30363d] rounded-lg p-4">
+              <input
+                type="text"
+                placeholder="Search anything..."
+                className="w-full bg-[#010409] border border-[#30363d] rounded-md px-4 py-2.5 text-sm text-[#e6edf3] placeholder:text-[#7d8590] focus:outline-none focus:border-[#58a6ff] transition-colors"
+              />
+            </div>
+            <div className="bg-[#0d1117] border border-[#30363d] rounded-lg overflow-hidden">
+              <DataTable data={data} />
+            </div>
+          </div>
           
           {/* After Course Completion Section */}
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-[#e6edf3]">After Course Completion</h2>
-              <p className="text-sm text-[#7d8590] mt-1">Post-completion feedback and engagement</p>
+          <div className="space-y-6 pt-8 mt-8 border-t border-[#30363d]">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-[#e6edf3]">Feedback Collection</h2>
+                <p className="text-sm text-[#7d8590] mt-1">Collect feedback from completed courses</p>
+              </div>
             </div>
             
             {/* Feedback Buttons */}
@@ -480,9 +505,9 @@ const Training = () => {
                   </div>
                   <div className="flex-1 text-left">
                     <div className="text-sm font-semibold text-[#e6edf3] group-hover:text-[#ea4335] transition-colors">
-                      {emailFeedbackLoading ? 'Sending...' : 'Email Feedback'}
+                      {emailFeedbackLoading ? 'Sending...' : 'Send Email'}
                     </div>
-                    <div className="text-xs text-[#7d8590]">Collect feedback</div>
+                    <div className="text-xs text-[#7d8590]">Email feedback</div>
                   </div>
                 </div>
               </button>
@@ -505,15 +530,17 @@ const Training = () => {
                   </div>
                   <div className="flex-1 text-left">
                     <div className="text-sm font-semibold text-[#e6edf3] group-hover:text-[#25D366] transition-colors">
-                      {whatsappFeedbackLoading ? 'Sending...' : 'WhatsApp Feedback'}
+                      {whatsappFeedbackLoading ? 'Sending...' : 'Send WhatsApp'}
                     </div>
-                    <div className="text-xs text-[#7d8590]">Quick responses</div>
+                    <div className="text-xs text-[#7d8590]">WhatsApp feedback</div>
                   </div>
                 </div>
               </button>
             </div>
 
-            <DataTable data={courseCompletionData} />
+            <div className="bg-[#0d1117] border border-[#30363d] rounded-lg overflow-hidden">
+              <DataTable data={courseCompletionData} />
+            </div>
           </div>
         </div>
     </main>
