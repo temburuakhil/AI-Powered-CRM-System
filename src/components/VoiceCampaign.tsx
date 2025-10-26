@@ -729,18 +729,24 @@ When transferring, briefly explain to the caller that you're connecting them to 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button
-          className="flex items-center gap-2 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 text-white shadow-lg"
+        <button 
+          className="group relative bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-2.5 hover:border-[#1f6feb] hover:bg-[#1f6feb]/5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={recipients.length === 0}
         >
-          <Phone className="w-4 h-4" />
-          Voice Campaign
-          {recipients.length > 0 && (
-            <span className="ml-1 px-2 py-0.5 rounded-full bg-white/20 text-xs font-semibold">
-              {recipients.length}
-            </span>
-          )}
-        </Button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-md bg-[#1f6feb]/10 group-hover:bg-[#1f6feb]/20 flex items-center justify-center transition-colors">
+              <Phone className="w-4 h-4 text-[#1f6feb]" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-semibold text-[#e6edf3] group-hover:text-[#1f6feb] transition-colors">
+                Voice Campaign
+              </div>
+              {recipients.length > 0 && (
+                <div className="text-xs text-[#7d8590]">{recipients.length} recipients</div>
+              )}
+            </div>
+          </div>
+        </button>
       </DialogTrigger>
 
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">

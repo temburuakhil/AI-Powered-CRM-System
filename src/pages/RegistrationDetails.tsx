@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import Papa from "papaparse";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, XCircle, ArrowLeft, RotateCcw } from "lucide-react";
+import { AlertCircle, CheckCircle, XCircle, RotateCcw, Bell, FileCheck } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import Sidebar from "@/components/layout/Sidebar";
+import SearchBar from "@/components/SearchBar";
 import {
   Table,
   TableBody,
@@ -32,9 +34,26 @@ const RegistrationDetails = () => {
   const [error, setError] = useState<string>("");
   const [processingRows, setProcessingRows] = useState<Set<number>>(new Set());
   const [rowStatus, setRowStatus] = useState<Map<string, 'approved' | 'rejected'>>(new Map());
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const [customManagers, setCustomManagers] = useState<Array<{id: string; name: string; projects: any[]}>>([]);
+
+  // Load custom managers from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem("customManagers");
+    if (stored) {
+      try { setCustomManagers(JSON.parse(stored)); } catch {}
+    }
+  }, []);
+
+  const handleDeleteManager = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = customManagers.filter(m => m.id !== id);
+    setCustomManagers(updated);
+    localStorage.setItem("customManagers", JSON.stringify(updated));
+  };
 
   // Determine which sheet to use based on the route
   const isScholarship = location.pathname.includes('scholarship');
@@ -254,7 +273,7 @@ const RegistrationDetails = () => {
 
   if (isLoading) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br from-slate-50 ${isScholarship ? 'via-purple-50/30 to-pink-50/30' : 'via-green-50/30 to-emerald-50/30'} dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center`}>
+      <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex items-center justify-center">
         <div className="text-center space-y-8">
           <div className="relative inline-block">
             <div className={`w-20 h-20 rounded-3xl ${isScholarship ? 'bg-gradient-to-br from-purple-500 via-purple-600 to-pink-600 shadow-purple-500/40' : 'bg-gradient-to-br from-green-500 via-emerald-600 to-teal-600 shadow-green-500/40'} mx-auto flex items-center justify-center animate-pulse shadow-2xl`}>
@@ -274,7 +293,7 @@ const RegistrationDetails = () => {
 
   if (error) {
     return (
-      <div className={`min-h-screen bg-gradient-to-br from-slate-50 ${isScholarship ? 'via-purple-50/30 to-pink-50/30' : 'via-green-50/30 to-emerald-50/30'} dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-6`}>
+      <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl border-2 border-red-200/60 dark:border-red-900/60 p-10 space-y-6">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30 flex items-center justify-center shadow-lg">
             <AlertCircle className="h-7 w-7 text-red-600 dark:text-red-400" />
@@ -303,76 +322,78 @@ const RegistrationDetails = () => {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-50 ${isScholarship ? 'via-purple-50/30 to-pink-50/30' : 'via-green-50/30 to-emerald-50/30'} dark:from-slate-950 dark:via-slate-900 dark:to-slate-950`}>
-      {/* Header */}
-      <div className="border-b border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-8 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                onClick={() => navigate(isScholarship ? "/scholarships" : "/schemes")}
-                variant="outline"
-                className="rounded-xl"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to {isScholarship ? 'Scholarships' : 'Schemes'}
-              </Button>
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className={`w-10 h-10 rounded-xl ${isScholarship ? 'bg-gradient-to-br from-purple-500 via-purple-600 to-pink-600 shadow-purple-500/30' : 'bg-gradient-to-br from-green-500 via-emerald-600 to-teal-600 shadow-green-500/30'} flex items-center justify-center shadow-lg`}>
-                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <div className={`absolute inset-0 rounded-xl ${isScholarship ? 'bg-gradient-to-br from-purple-500 to-pink-600' : 'bg-gradient-to-br from-green-500 to-teal-600'} blur-md opacity-40 -z-10`}></div>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 dark:from-white dark:via-slate-200 dark:to-slate-300 bg-clip-text text-transparent">
-                    {isScholarship ? 'Scholarship' : 'Scheme'} Registration Details
-                  </h1>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Review and approve registrations</p>
-                </div>
-              </div>
-            </div>
-            <div className={`flex items-center gap-2.5 px-4 py-2 rounded-full ${isScholarship ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200/60 dark:border-purple-800/60' : 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200/60 dark:border-green-800/60'} shadow-sm`}>
-              <span className={`text-sm font-semibold ${isScholarship ? 'text-purple-700 dark:text-purple-400' : 'text-green-700 dark:text-green-400'}`}>
+    <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex overflow-x-hidden">
+      <Sidebar 
+        customManagers={customManagers} 
+        onDeleteManager={handleDeleteManager}
+        isCollapsed={isSidebarCollapsed}
+        onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      />
+      <main className={`flex-1 transition-all duration-300 overflow-x-hidden ${isSidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+        {/* Top Bar */}
+        <header className="h-16 border-b border-[#30363d] bg-[#010409] px-6 flex items-center justify-between sticky top-0 z-40">
+          <div className="flex items-center gap-4 flex-1 max-w-2xl">
+            <SearchBar customManagers={customManagers} />
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#1c2128] border border-[#30363d]">
+              <FileCheck className={`w-4 h-4 ${isScholarship ? 'text-[#a371f7]' : 'text-[#3fb950]'}`} />
+              <span className="text-sm font-medium text-[#e6edf3]">
                 {filteredData.length} Registration{filteredData.length !== 1 ? 's' : ''}
               </span>
             </div>
+            <button className="relative p-2 text-[#7d8590] hover:text-[#e6edf3] hover:bg-[#1c2128] rounded-md transition-colors">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-[#1f6feb] rounded-full"></span>
+            </button>
+            <div className={`w-8 h-8 rounded-full ${isScholarship ? 'bg-gradient-to-br from-[#a371f7] to-[#8957e5]' : 'bg-gradient-to-br from-[#3fb950] to-[#2ea043]'} flex items-center justify-center text-xs font-semibold`}>
+              RD
+            </div>
           </div>
-        </div>
-      </div>
+        </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-8 py-10 space-y-8">
-        {/* Search Bar */}
-        <div className="relative group">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"></div>
-          <div className="relative">
-            <svg className="absolute left-5 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-green-600 dark:group-focus-within:text-green-400 transition-all duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <Input
-              placeholder="Search registrations..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-14 pr-6 h-14 text-base border-2 border-slate-200/60 dark:border-slate-700/60 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-sm hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-600 focus:shadow-2xl focus:border-green-500 dark:focus:border-green-500 transition-all duration-300 font-medium"
-            />
+        {/* Main Content */}
+        <div className="max-w-[1800px] mx-auto p-8 space-y-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-md ${isScholarship ? 'bg-gradient-to-br from-[#a371f7] to-[#8957e5]' : 'bg-gradient-to-br from-[#3fb950] to-[#2ea043]'} flex items-center justify-center`}>
+                <FileCheck className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold">{isScholarship ? 'Scholarship' : 'Scheme'} Registration Details</h1>
+                <p className="text-xs text-[#7d8590]">Review and approve registrations</p>
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate(isScholarship ? "/scholarships" : "/schemes")}
+              variant="outline"
+              className="bg-[#21262d] border-[#30363d] text-[#e6edf3] hover:bg-[#30363d] hover:border-[#58a6ff]"
+            >
+              Back to {isScholarship ? 'Scholarships' : 'Schemes'}
+            </Button>
           </div>
+        {/* Search Bar */}
+        <div className="relative">
+          <Input
+            placeholder="Search registrations..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-4 pr-6 h-12 text-base bg-[#0d1117] border border-[#30363d] text-[#e6edf3] placeholder-[#7d8590] focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] rounded-md"
+          />
         </div>
 
         {/* Table */}
-        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-xl border-2 border-slate-200/60 dark:border-slate-800/60 overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-[#161b22] border border-[#30363d] rounded-lg shadow-xl overflow-hidden">
+          <div className="overflow-x-auto max-w-full">
             <Table>
               <TableHeader>
-                <TableRow className="border-b-2 border-slate-200/80 dark:border-slate-800/80 bg-gradient-to-r from-slate-50 via-green-50/30 to-emerald-50/30 dark:from-slate-800/50 dark:via-slate-800/50 dark:to-slate-800/50">
+                <TableRow className="border-b border-[#30363d] bg-[#0d1117]">
                   {columns.map((column) => (
-                    <TableHead key={column} className="whitespace-nowrap h-14 first:pl-8 font-bold text-sm text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                    <TableHead key={column} className="h-14 first:pl-8 font-bold text-sm text-[#e6edf3] uppercase tracking-wide max-w-[200px]">
                       {column}
                     </TableHead>
                   ))}
-                  <TableHead className="whitespace-nowrap h-14 font-bold text-sm text-slate-700 dark:text-slate-300 uppercase tracking-wide text-center">
+                  <TableHead className="h-14 font-bold text-sm text-[#e6edf3] uppercase tracking-wide text-center min-w-[200px]">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -382,45 +403,44 @@ const RegistrationDetails = () => {
                   <TableRow>
                     <TableCell colSpan={columns.length + 1} className="text-center py-12">
                       <div className="flex flex-col items-center gap-3">
-                        <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                          <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="w-16 h-16 rounded-lg bg-[#1c2128] flex items-center justify-center">
+                          <svg className="w-8 h-8 text-[#7d8590]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                           </svg>
                         </div>
-                        <p className="text-lg font-semibold text-slate-900 dark:text-white">No registrations found</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Try adjusting your search</p>
+                        <p className="text-lg font-semibold text-[#e6edf3]">No registrations found</p>
+                        <p className="text-sm text-[#7d8590]">Try adjusting your search</p>
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : 
+                ) : (
                   filteredData.map((row, idx) => {
-                    // Calculate unique row ID for persistence
                     const rowId = String(row.ID || row.id || row.Id || row.Email || idx);
                     
                     return (
                       <TableRow 
                         key={idx}
-                        className="border-b border-slate-100/80 dark:border-slate-800/80 hover:bg-gradient-to-r hover:from-green-50/40 hover:via-transparent hover:to-emerald-50/40 dark:hover:from-slate-800/40 dark:hover:via-transparent dark:hover:to-slate-800/40 transition-all duration-200"
+                        className="border-b border-[#21262d] hover:bg-[#0d1117]/50 transition-all duration-200"
                       >
                         {columns.map((column) => (
                           <TableCell 
                             key={column}
-                            className="whitespace-nowrap py-5 text-slate-700 dark:text-slate-300 font-medium first:pl-8"
+                            className="py-5 text-[#e6edf3] font-medium first:pl-8 max-w-[200px] break-words"
                           >
                             {String(row[column])}
                           </TableCell>
                         ))}
-                        <TableCell className="whitespace-nowrap py-5">
+                        <TableCell className="py-5 min-w-[200px]">
                           <div className="flex items-center justify-center gap-2">
                             <Button
                               onClick={() => handleApprove(idx, row)}
                               disabled={processingRows.has(idx) || rowStatus.has(rowId)}
                               className={
                                 rowStatus.get(rowId) === 'approved'
-                                  ? "bg-green-600 text-white cursor-not-allowed opacity-80"
+                                  ? "bg-[#238636] text-white cursor-not-allowed opacity-80"
                                   : rowStatus.get(rowId) === 'rejected'
-                                  ? "bg-gray-400 text-gray-600 cursor-not-allowed opacity-50"
-                                  : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
+                                  ? "bg-[#6e7681] text-[#e6edf3] cursor-not-allowed opacity-50"
+                                  : "bg-[#238636] hover:bg-[#2ea043] text-white transition-all duration-200 disabled:opacity-50"
                               }
                               size="sm"
                             >
@@ -449,10 +469,10 @@ const RegistrationDetails = () => {
                               disabled={processingRows.has(idx) || rowStatus.has(rowId)}
                               className={
                                 rowStatus.get(rowId) === 'rejected'
-                                  ? "bg-red-600 text-white cursor-not-allowed opacity-80"
+                                  ? "bg-[#da3633] text-white cursor-not-allowed opacity-80"
                                   : rowStatus.get(rowId) === 'approved'
-                                  ? "bg-gray-400 text-gray-600 cursor-not-allowed opacity-50"
-                                  : "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
+                                  ? "bg-[#6e7681] text-[#e6edf3] cursor-not-allowed opacity-50"
+                                  : "bg-[#da3633] hover:bg-[#b62324] text-white transition-all duration-200 disabled:opacity-50"
                               }
                               size="sm"
                             >
@@ -494,7 +514,7 @@ const RegistrationDetails = () => {
                       </TableRow>
                     );
                   })
-                }
+                )}
               </TableBody>
             </Table>
           </div>
@@ -511,7 +531,8 @@ const RegistrationDetails = () => {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

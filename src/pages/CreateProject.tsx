@@ -1,10 +1,12 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, FolderPlus, ExternalLink, Upload, FileText, X } from "lucide-react";
+import { ArrowLeft, Plus, FolderPlus, ExternalLink, Upload, FileText, X, Bell } from "lucide-react";
+import Sidebar from "@/components/layout/Sidebar";
+import SearchBar from "@/components/SearchBar";
 
 const CreateProject = () => {
   const navigate = useNavigate();
@@ -16,6 +18,23 @@ const CreateProject = () => {
   const [knowledgeBaseFiles, setKnowledgeBaseFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [customManagers, setCustomManagers] = useState<Array<{id: string; name: string; projects: any[]}>>([]);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Load custom managers from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem("customManagers");
+    if (stored) {
+      try { setCustomManagers(JSON.parse(stored)); } catch {}
+    }
+  }, []);
+
+  const handleDeleteManager = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = customManagers.filter(m => m.id !== id);
+    setCustomManagers(updated);
+    localStorage.setItem("customManagers", JSON.stringify(updated));
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -179,36 +198,52 @@ const CreateProject = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-cyan-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      {/* Header */}
-      <div className="border-b border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl sticky top-0 z-50 shadow-sm">
-        <div className="max-w-4xl mx-auto px-8 py-5">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate(`/manager/${managerId}`)}
-              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+    <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex">
+      <Sidebar 
+        customManagers={customManagers} 
+        onDeleteManager={handleDeleteManager}
+        isCollapsed={isSidebarCollapsed}
+        onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      />
+      <main className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+        {/* Top Bar */}
+        <header className="h-16 border-b border-[#30363d] bg-[#010409] px-6 flex items-center justify-between sticky top-0 z-40">
+          <div className="flex items-center gap-4 flex-1 max-w-2xl">
+            <SearchBar customManagers={customManagers} />
+          </div>
+          <div className="flex items-center gap-6">
+            <button className="relative p-2 text-[#7d8590] hover:text-[#e6edf3] hover:bg-[#1c2128] rounded-md transition-colors">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-[#1f6feb] rounded-full"></span>
             </button>
-            <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <FolderPlus className="w-6 h-6 text-white" />
-              </div>
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500 to-teal-600 blur-md opacity-40 -z-10"></div>
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 dark:from-white dark:via-slate-200 dark:to-slate-300 bg-clip-text text-transparent">
-                Create New Project
-              </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Add a new project with Google Sheets integration</p>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center text-xs font-semibold">
+              CP
             </div>
           </div>
-        </div>
-      </div>
+        </header>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-8 py-16">
-        <Card className="p-8 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-2 border-slate-200/60 dark:border-slate-800/60 shadow-xl">
+        {/* Main Content */}
+        <div className="max-w-4xl mx-auto p-8 space-y-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center">
+                <FolderPlus className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold">Create New Project</h1>
+                <p className="text-xs text-[#7d8590]">Add a new project with Google Sheets integration</p>
+              </div>
+            </div>
+            <Button
+              onClick={() => navigate(`/manager/${managerId}`)}
+              variant="outline"
+              className="bg-[#21262d] border-[#30363d] text-[#e6edf3] hover:bg-[#30363d] hover:border-[#58a6ff]"
+            >
+              Back to Manager
+            </Button>
+          </div>
+
+          <Card className="p-8 bg-[#161b22] border border-[#30363d] shadow-xl">
           <div className="space-y-8">
             {/* Icon Preview */}
             <div className="flex justify-center">
@@ -417,7 +452,8 @@ const CreateProject = () => {
             </div>
           </div>
         </Card>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

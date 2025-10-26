@@ -319,17 +319,21 @@ export const EmailCampaign = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button
-          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-        >
-          <Mail className="w-4 h-4 mr-2" />
-          Email Campaign
-          {recipients.length > 0 && (
-            <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs">
-              {recipients.length}
-            </span>
-          )}
-        </Button>
+        <button className="group relative bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-2.5 hover:border-[#ea4335] hover:bg-[#ea4335]/5 transition-all duration-200">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-md bg-[#ea4335]/10 group-hover:bg-[#ea4335]/20 flex items-center justify-center transition-colors">
+              <Mail className="w-4 h-4 text-[#ea4335]" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-semibold text-[#e6edf3] group-hover:text-[#ea4335] transition-colors">
+                Email Campaign
+              </div>
+              {recipients.length > 0 && (
+                <div className="text-xs text-[#7d8590]">{recipients.length} recipients</div>
+              )}
+            </div>
+          </div>
+        </button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>

@@ -164,72 +164,69 @@ const ProjectDetail = () => {
 
   if (!project || !manager) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-cyan-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="text-slate-600 dark:text-slate-400 font-medium mt-4">Loading...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#58a6ff]"></div>
+          <p className="text-[#7d8590] font-medium mt-4">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-cyan-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <div className="min-h-screen bg-[#0d1117] text-[#e6edf3]">
       {/* Header */}
-      <div className="border-b border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl sticky top-0 z-50 shadow-sm">
-        <div className="max-w-[1600px] mx-auto px-8 py-4">
+      <div className="border-b border-[#30363d] bg-[#010409] sticky top-0 z-50">
+        <div className="max-w-[1800px] mx-auto px-8 py-4">
           <div className="flex flex-col gap-4">
             {/* First Row */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => navigate(`/manager/${managerId}`)}
-                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="p-2 rounded-md hover:bg-[#1c2128] transition-colors"
                 >
-                  <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                  <ArrowLeft className="w-5 h-5 text-[#7d8590] hover:text-[#e6edf3]" />
                 </button>
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                    <FileSpreadsheet className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500 to-teal-600 blur-md opacity-40 -z-10"></div>
+                <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center">
+                  <FileSpreadsheet className="w-4 h-4 text-white" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 dark:from-white dark:via-slate-200 dark:to-slate-300 bg-clip-text text-transparent">
+                    <h1 className="text-xl font-semibold text-[#e6edf3]">
                       {project.name}
                     </h1>
-                    <span className="text-xs text-slate-400 dark:text-slate-500">•</span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">{manager.name}</span>
+                    <span className="text-xs text-[#7d8590]">•</span>
+                    <span className="text-xs text-[#7d8590]">{manager.name}</span>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-xs text-[#7d8590] mt-0.5">
                     Project Dashboard - Data from Google Sheets
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200/60 dark:border-blue-800/60 shadow-sm">
-                <div className="relative">
-                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></div>
-                  <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping"></div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1f6feb]/10 border border-[#1f6feb]/30">
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3fb950] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3fb950]"></span>
                 </div>
-                <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">Live</span>
+                <span className="text-xs font-semibold text-[#58a6ff]">Live</span>
               </div>
             </div>
 
             {/* Second Row */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border border-blue-200/60 dark:border-blue-800/60">
-                  <FolderOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#1c2128] border border-[#30363d]">
+                  <FolderOpen className="w-4 h-4 text-[#58a6ff]" />
+                  <span className="text-sm font-medium text-[#e6edf3]">
                     {data.length} Records
                   </span>
                 </div>
                 
                 {knowledgeBaseFiles.length > 0 && (
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200/60 dark:border-purple-800/60">
-                    <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                    <span className="text-sm font-semibold text-purple-700 dark:text-purple-400">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#1c2128] border border-[#30363d]">
+                    <FileText className="w-4 h-4 text-[#a371f7]" />
+                    <span className="text-sm font-medium text-[#e6edf3]">
                       {knowledgeBaseFiles.length} Knowledge Base {knowledgeBaseFiles.length === 1 ? 'File' : 'Files'}
                     </span>
                   </div>
@@ -239,12 +236,12 @@ const ProjectDetail = () => {
               <div className="flex items-center gap-3">
                 <button
                   onClick={fetchSheetData}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow"
+                  className="flex items-center gap-2 px-4 py-2 rounded-md bg-[#0d1117] border border-[#30363d] hover:border-[#58a6ff] hover:bg-[#1c2128] transition-all"
                 >
-                  <RefreshCw className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  <RefreshCw className="w-4 h-4 text-[#7d8590]" />
                   <div className="text-left">
-                    <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">Refresh</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                    <div className="text-xs font-semibold text-[#e6edf3]">Refresh</div>
+                    <div className="text-xs text-[#7d8590]">
                       {lastRefresh.toLocaleTimeString()}
                     </div>
                   </div>
@@ -290,18 +287,18 @@ const ProjectDetail = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-[1600px] mx-auto px-8 py-8">
+      <div className="max-w-[1800px] mx-auto px-8 py-8">
         <div className="space-y-6">
           {/* Knowledge Base Section */}
           {knowledgeBaseFiles.length > 0 && (
-            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl border-2 border-slate-200/60 dark:border-slate-800/60 shadow-xl p-6">
+            <div className="bg-[#0d1117] rounded-lg border border-[#30363d] p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-lg bg-[#a371f7]/10 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-[#a371f7]" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Knowledge Base</h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Uploaded documentation and resources</p>
+                  <h2 className="text-lg font-semibold text-[#e6edf3]">Knowledge Base</h2>
+                  <p className="text-xs text-[#7d8590]">Uploaded documentation and resources</p>
                 </div>
               </div>
               
@@ -310,16 +307,16 @@ const ProjectDetail = () => {
                   <button
                     key={index}
                     onClick={() => downloadKnowledgeBaseFile(file.name)}
-                    className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all group"
+                    className="flex items-center gap-3 p-4 bg-[#0d1117] border border-[#30363d] rounded-lg hover:border-[#a371f7] hover:bg-[#1c2128] transition-all group"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
-                      <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    <div className="w-10 h-10 rounded-lg bg-[#a371f7]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#a371f7]/20 transition-colors">
+                      <FileText className="w-5 h-5 text-[#a371f7]" />
                     </div>
                     <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate group-hover:text-purple-700 dark:group-hover:text-purple-400">
+                      <p className="text-sm font-medium text-[#e6edf3] truncate group-hover:text-[#a371f7]">
                         {file.name}
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                      <p className="text-xs text-[#7d8590]">
                         {formatFileSize(file.size)}
                       </p>
                     </div>
@@ -330,20 +327,20 @@ const ProjectDetail = () => {
           )}
 
           {/* Data Table */}
-          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl border-2 border-slate-200/60 dark:border-slate-800/60 shadow-xl overflow-hidden">
+          <div>
             {isLoading && data.length === 0 ? (
-              <div className="flex items-center justify-center py-20">
+              <div className="flex items-center justify-center py-20 bg-[#0d1117] rounded-lg border border-[#30363d]">
                 <div className="text-center">
-                  <RefreshCw className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-                  <p className="text-slate-600 dark:text-slate-400 font-medium">Loading data...</p>
+                  <RefreshCw className="w-12 h-12 text-[#58a6ff] animate-spin mx-auto mb-4" />
+                  <p className="text-[#e6edf3] font-medium">Loading data...</p>
                 </div>
               </div>
             ) : data.length === 0 ? (
-              <div className="flex items-center justify-center py-20">
+              <div className="flex items-center justify-center py-20 bg-[#0d1117] rounded-lg border border-[#30363d]">
                 <div className="text-center">
-                  <FileSpreadsheet className="w-16 h-16 text-slate-300 dark:text-slate-700 mx-auto mb-4" />
-                  <p className="text-slate-600 dark:text-slate-400 font-medium">No data available</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-500 mt-2">
+                  <FileSpreadsheet className="w-16 h-16 text-[#7d8590] mx-auto mb-4" />
+                  <p className="text-[#e6edf3] font-medium">No data available</p>
+                  <p className="text-sm text-[#7d8590] mt-2">
                     Check your Google Sheets URL and make sure it's published to the web
                   </p>
                 </div>
