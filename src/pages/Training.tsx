@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Papa from "papaparse";
 import { DataTable } from "@/components/DataTable";
 import { LeadCounter } from "@/components/LeadCounter";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare, Bell, BookOpen } from "lucide-react";
+import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare, Bell, BookOpen, FileText, MessageSquareText } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import SearchBar from "@/components/SearchBar";
 
@@ -15,6 +16,7 @@ const SHEET2_GID = "394964549"; // Course Completion
 
 const Training = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [customManagers, setCustomManagers] = useState<Array<{id: string; name: string; projects: any[]}>>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -331,12 +333,28 @@ const Training = () => {
                 <p className="text-xs text-[#7d8590]">Odisha Computer Application Centre - Training Dashboard</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-xs text-[#7d8590]">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3fb950] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3fb950]"></span>
-              </span>
-              Live Status
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/transcripts')}
+                className="group relative bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-2 hover:border-[#58a6ff] hover:bg-[#58a6ff]/5 transition-all duration-200 flex items-center gap-2"
+              >
+                <FileText className="h-4 w-4 text-[#58a6ff]" />
+                <span className="text-sm font-medium text-[#e6edf3] group-hover:text-[#58a6ff] transition-colors">Transcripts</span>
+              </button>
+              <button
+                onClick={() => navigate('/feedback')}
+                className="group relative bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-2 hover:border-[#a371f7] hover:bg-[#a371f7]/5 transition-all duration-200 flex items-center gap-2"
+              >
+                <MessageSquareText className="h-4 w-4 text-[#a371f7]" />
+                <span className="text-sm font-medium text-[#e6edf3] group-hover:text-[#a371f7] transition-colors">Feedback</span>
+              </button>
+              <div className="flex items-center gap-2 text-xs text-[#7d8590] ml-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3fb950] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3fb950]"></span>
+                </span>
+                Live Status
+              </div>
             </div>
           </div>
 
