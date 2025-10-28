@@ -6,7 +6,7 @@ import { LeadCounter } from "@/components/LeadCounter";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare, Bell, BookOpen, FileText, MessageSquareText, ClipboardList } from "lucide-react";
+import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare, Bell, BookOpen, FileText, MessageSquareText } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import SearchBar from "@/components/SearchBar";
 
@@ -466,17 +466,6 @@ const Training = () => {
                   </div>
                 </div>
               </button>
-            </div>
-            
-            {/* Registration Details Button */}
-            <div className="mt-4">
-              <Button 
-                onClick={() => navigate("/registration-details")}
-                className="bg-[#0d1117] border border-[#30363d] hover:border-[#58a6ff] hover:bg-[#1c2128] text-[#e6edf3] transition-all duration-200"
-              >
-                <ClipboardList className="mr-2 h-4 w-4" />
-                View Registration Details
-              </Button>
             </div>
           </div>
 

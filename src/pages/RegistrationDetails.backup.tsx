@@ -80,7 +80,8 @@ const RegistrationDetails = () => {
       };
 
       // Send to webhook using Image technique to bypass CORS
-      const webhookUrl = `https://saumojitsantra.app.n8n.cloud/webhook/11b3e19c-8b56-4791-8476-b50444605434`;
+      const webhookUrl = `https://aiagentgita.app.n8n.cloud/webhook/11b3e19c-8b56-4791-8476-b50444605434`;
+
       const params = new URLSearchParams({
         action: webhookData.action,
         id: String(webhookData.id || ''),
@@ -135,7 +136,7 @@ const RegistrationDetails = () => {
       };
 
       // Send to webhook using Image technique to bypass CORS
-      const webhookUrl = `https://saumojitsantra.app.n8n.cloud/webhook/11b3e19c-8b56-4791-8476-b50444605434`;
+      const webhookUrl = `https://aiagentgita.app.n8n.cloud/webhook/11b3e19c-8b56-4791-8476-b50444605434`;
       const params = new URLSearchParams({
         action: webhookData.action,
         id: String(webhookData.id || ''),

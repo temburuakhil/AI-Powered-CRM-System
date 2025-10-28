@@ -24,8 +24,8 @@ const SCHOLARSHIP_SHEET_ID = "1mKHy1nYMGc_EGkA7X1T8609SPYBkhdBMwYlZSzfPfqk";
 const SCHOLARSHIP_REGISTRATION_GID = "1274670035"; // Registration Details sheet GID for Scholarships
 
 // Webhook URLs for Approve/Reject
-const SCHEMES_APPROVE_REJECT_WEBHOOK = "https://saumojitsantra.app.n8n.cloud/webhook/11b3e19c-8b56-4791-8476-b50444605434";
-const SCHOLARSHIP_APPROVE_REJECT_WEBHOOK = "https://saumojitsantra.app.n8n.cloud/webhook/494a460f-803d-4848-b729-9fecebe4ff79";
+const SCHEMES_APPROVE_REJECT_WEBHOOK = "https://aiagentgita.app.n8n.cloud/webhook/11b3e19c-8b56-4791-8476-b50444605434";
+const SCHOLARSHIP_APPROVE_REJECT_WEBHOOK = "https://aiagentgita.app.n8n.cloud/webhook/494a460f-803d-4848-b729-9fecebe4ff79";
 
 const RegistrationDetails = () => {
   const [data, setData] = useState<Record<string, any>[]>([]);
