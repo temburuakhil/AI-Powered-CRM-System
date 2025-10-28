@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   BarChart3,
@@ -23,7 +23,16 @@ type SidebarProps = {
 
 const Sidebar: React.FC<SidebarProps> = ({ customManagers, onDeleteManager, isCollapsed, onToggle }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isEGovExpanded, setIsEGovExpanded] = useState(true);
+
+  // Helper function to check if route is active
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <aside className={`${isCollapsed ? 'w-16' : 'w-64'} border-r border-[#30363d] bg-[#010409] flex flex-col fixed h-full transition-all duration-300 ease-in-out`}>
@@ -56,11 +65,15 @@ const Sidebar: React.FC<SidebarProps> = ({ customManagers, onDeleteManager, isCo
         {!isCollapsed && <div className="px-3 py-2 text-xs font-semibold text-[#7d8590] uppercase tracking-wider">Main</div>}
         <button
           onClick={() => navigate("/")}
-          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#e6edf3] bg-[#1c2128] rounded-md hover:bg-[#30363d] transition-colors"
+          className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
+            isActive('/') 
+              ? 'text-[#e6edf3] bg-[#1c2128] font-medium' 
+              : 'text-[#7d8590] hover:bg-[#1c2128] hover:text-[#e6edf3]'
+          }`}
           title="Dashboard"
         >
           <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
-          {!isCollapsed && <span className="font-medium">Dashboard</span>}
+          {!isCollapsed && <span className={isActive('/') ? 'font-medium' : ''}>Dashboard</span>}
         </button>
         <button 
           className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#7d8590] rounded-md hover:bg-[#1c2128] hover:text-[#e6edf3] transition-colors"
@@ -82,7 +95,11 @@ const Sidebar: React.FC<SidebarProps> = ({ customManagers, onDeleteManager, isCo
                 setIsEGovExpanded(!isEGovExpanded);
               }
             }}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#7d8590] rounded-md hover:bg-[#1c2128] hover:text-[#e6edf3] transition-colors"
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
+              isActive('/e-governance') || isActive('/schemes') || isActive('/scholarships')
+                ? 'text-[#e6edf3] bg-[#1c2128] font-medium' 
+                : 'text-[#7d8590] hover:bg-[#1c2128] hover:text-[#e6edf3]'
+            }`}
             title="E-Governance"
           >
             <FileText className="w-4 h-4 flex-shrink-0" />
@@ -99,18 +116,26 @@ const Sidebar: React.FC<SidebarProps> = ({ customManagers, onDeleteManager, isCo
             <div className="ml-7 mt-1 space-y-1">
               <button
                 onClick={() => navigate("/schemes")}
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#7d8590] rounded-md hover:bg-[#1c2128] hover:text-[#e6edf3] transition-colors"
+                className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  isActive('/schemes')
+                    ? 'text-[#e6edf3] bg-[#1c2128] font-medium' 
+                    : 'text-[#7d8590] hover:bg-[#1c2128] hover:text-[#e6edf3]'
+                }`}
                 title="Government Schemes"
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-[#7d8590]"></div>
+                <div className={`w-1.5 h-1.5 rounded-full ${isActive('/schemes') ? 'bg-[#3fb950]' : 'bg-[#7d8590]'}`}></div>
                 <span>Government Schemes</span>
               </button>
               <button
                 onClick={() => navigate("/scholarships")}
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-[#7d8590] rounded-md hover:bg-[#1c2128] hover:text-[#e6edf3] transition-colors"
+                className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  isActive('/scholarships')
+                    ? 'text-[#e6edf3] bg-[#1c2128] font-medium' 
+                    : 'text-[#7d8590] hover:bg-[#1c2128] hover:text-[#e6edf3]'
+                }`}
                 title="Scholarships"
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-[#7d8590]"></div>
+                <div className={`w-1.5 h-1.5 rounded-full ${isActive('/scholarships') ? 'bg-[#3fb950]' : 'bg-[#7d8590]'}`}></div>
                 <span>Scholarships</span>
               </button>
             </div>
@@ -119,7 +144,11 @@ const Sidebar: React.FC<SidebarProps> = ({ customManagers, onDeleteManager, isCo
         
         <button
           onClick={() => navigate("/training")}
-          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#7d8590] rounded-md hover:bg-[#1c2128] hover:text-[#e6edf3] transition-colors"
+          className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
+            isActive('/training')
+              ? 'text-[#e6edf3] bg-[#1c2128] font-medium' 
+              : 'text-[#7d8590] hover:bg-[#1c2128] hover:text-[#e6edf3]'
+          }`}
           title="Training"
         >
           <Users className="w-4 h-4 flex-shrink-0" />
@@ -136,7 +165,11 @@ const Sidebar: React.FC<SidebarProps> = ({ customManagers, onDeleteManager, isCo
             {customManagers.map((manager) => (
               <div
                 key={manager.id}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#7d8590] rounded-md hover:bg-[#1c2128] hover:text-[#e6edf3] transition-colors group cursor-pointer"
+                className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors group cursor-pointer ${
+                  isActive(`/manager/${manager.id}`)
+                    ? 'text-[#e6edf3] bg-[#1c2128] font-medium' 
+                    : 'text-[#7d8590] hover:bg-[#1c2128] hover:text-[#e6edf3]'
+                }`}
                 onClick={() => navigate(`/manager/${manager.id}`)}
                 title={manager.name}
               >
