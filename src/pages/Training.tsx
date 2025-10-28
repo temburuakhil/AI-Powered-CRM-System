@@ -40,7 +40,7 @@ const Training = () => {
   const sendEmailCampaign = async () => {
     setEmailLoading(true);
     try {
-      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/64d94d32-3580-4730-90f9-1e64895c90fe";
+      const webhookUrl = "https://aiagentgita.app.n8n.cloud/webhook/64d94d32-3580-4730-90f9-1e64895c90fe";
       const img = new Image();
       img.src = webhookUrl;
       
@@ -64,7 +64,7 @@ const Training = () => {
   const sendCallCampaign = async () => {
     setCallLoading(true);
     try {
-      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/9ffc0f31-1f1b-4556-92a5-f4762baed323";
+      const webhookUrl = "https://aiagentgita.app.n8n.cloud/webhook/9ffc0f31-1f1b-4556-92a5-f4762baed323";
       const img = new Image();
       img.src = webhookUrl;
       
@@ -88,7 +88,7 @@ const Training = () => {
   const sendWhatsAppCampaign = async () => {
     setWhatsappLoading(true);
     try {
-      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/78ebcdc8-7562-42c0-bc92-6ac723e2ac4a";
+      const webhookUrl = "https://aiagentgita.app.n8n.cloud/webhook/78ebcdc8-7562-42c0-bc92-6ac723e2ac4a";
       const img = new Image();
       img.src = webhookUrl;
       
@@ -112,7 +112,7 @@ const Training = () => {
   const sendSMSCampaign = async () => {
     setSmsLoading(true);
     try {
-      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/950d3eeb-b0f1-4b1f-a2bc-572856f2e098";
+      const webhookUrl = "https://aiagentgita.app.n8n.cloud/webhook/950d3eeb-b0f1-4b1f-a2bc-572856f2e098";
       const img = new Image();
       img.src = webhookUrl;
       
@@ -136,7 +136,7 @@ const Training = () => {
   const sendWhatsAppFeedback = async () => {
     setWhatsappFeedbackLoading(true);
     try {
-      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/03bdef8b-fd15-4cc1-9653-42d99b3dfdd7";
+      const webhookUrl = "https://aiagentgita.app.n8n.cloud/webhook/03bdef8b-fd15-4cc1-9653-42d99b3dfdd7";
       const img = new Image();
       img.src = webhookUrl;
       
@@ -160,7 +160,7 @@ const Training = () => {
   const sendEmailFeedback = async () => {
     setEmailFeedbackLoading(true);
     try {
-      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/3d51c0ec-8f8c-466a-89b0-0982646ebbb3";
+      const webhookUrl = "https://aiagentgita.app.n8n.cloud/webhook/3d51c0ec-8f8c-466a-89b0-0982646ebbb3";
       const img = new Image();
       img.src = webhookUrl;
       
