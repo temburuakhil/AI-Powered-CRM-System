@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Papa from "papaparse";
 import { DataTable } from "@/components/DataTable";
 import { LeadCounter } from "@/components/LeadCounter";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare, Bell, BookOpen } from "lucide-react";
+import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare, Bell, BookOpen, FileText, MessageSquareText, ClipboardList } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import SearchBar from "@/components/SearchBar";
 
@@ -15,6 +16,7 @@ const SHEET2_GID = "394964549"; // Course Completion
 
 const Training = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [customManagers, setCustomManagers] = useState<Array<{id: string; name: string; projects: any[]}>>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -29,18 +31,10 @@ const Training = () => {
   const [whatsappFeedbackLoading, setWhatsappFeedbackLoading] = useState(false);
   const [emailFeedbackLoading, setEmailFeedbackLoading] = useState(false);
 
-  // Load custom managers from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem("customManagers");
-    if (stored) {
-      try { setCustomManagers(JSON.parse(stored)); } catch {}
-    }
-  }, []);
-
   const sendEmailCampaign = async () => {
     setEmailLoading(true);
     try {
-      const webhookUrl = "https://aiagentgita.app.n8n.cloud/webhook/64d94d32-3580-4730-90f9-1e64895c90fe";
+      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/64d94d32-3580-4730-90f9-1e64895c90fe";
       const img = new Image();
       img.src = webhookUrl;
       
@@ -64,7 +58,7 @@ const Training = () => {
   const sendCallCampaign = async () => {
     setCallLoading(true);
     try {
-      const webhookUrl = "https://aiagentgita.app.n8n.cloud/webhook/9ffc0f31-1f1b-4556-92a5-f4762baed323";
+      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/9ffc0f31-1f1b-4556-92a5-f4762baed323";
       const img = new Image();
       img.src = webhookUrl;
       
@@ -88,7 +82,7 @@ const Training = () => {
   const sendWhatsAppCampaign = async () => {
     setWhatsappLoading(true);
     try {
-      const webhookUrl = "https://aiagentgita.app.n8n.cloud/webhook/78ebcdc8-7562-42c0-bc92-6ac723e2ac4a";
+      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/78ebcdc8-7562-42c0-bc92-6ac723e2ac4a";
       const img = new Image();
       img.src = webhookUrl;
       
@@ -112,7 +106,7 @@ const Training = () => {
   const sendSMSCampaign = async () => {
     setSmsLoading(true);
     try {
-      const webhookUrl = "https://aiagentgita.app.n8n.cloud/webhook/950d3eeb-b0f1-4b1f-a2bc-572856f2e098";
+      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/950d3eeb-b0f1-4b1f-a2bc-572856f2e098";
       const img = new Image();
       img.src = webhookUrl;
       
@@ -136,7 +130,7 @@ const Training = () => {
   const sendWhatsAppFeedback = async () => {
     setWhatsappFeedbackLoading(true);
     try {
-      const webhookUrl = "https://aiagentgita.app.n8n.cloud/webhook/03bdef8b-fd15-4cc1-9653-42d99b3dfdd7";
+      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/03bdef8b-fd15-4cc1-9653-42d99b3dfdd7";
       const img = new Image();
       img.src = webhookUrl;
       
@@ -160,7 +154,7 @@ const Training = () => {
   const sendEmailFeedback = async () => {
     setEmailFeedbackLoading(true);
     try {
-      const webhookUrl = "https://aiagentgita.app.n8n.cloud/webhook/3d51c0ec-8f8c-466a-89b0-0982646ebbb3";
+      const webhookUrl = "https://saumojitsantra.app.n8n.cloud/webhook/3d51c0ec-8f8c-466a-89b0-0982646ebbb3";
       const img = new Image();
       img.src = webhookUrl;
       
@@ -328,34 +322,47 @@ const Training = () => {
         </header>
 
         {/* Main Content */}
-        <div className="max-w-[1800px] mx-auto p-6 space-y-6">
-          {/* Page Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-[#30363d]">
+        <div className="max-w-[1800px] mx-auto p-8 space-y-8">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center">
+                <BookOpen className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-[#e6edf3]">OCAC Training CRM</h1>
-                <p className="text-sm text-[#7d8590]">Odisha Computer Application Centre - Training Dashboard</p>
+                <h1 className="text-xl font-semibold">OCAC Training CRM</h1>
+                <p className="text-xs text-[#7d8590]">Odisha Computer Application Centre - Training Dashboard</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-[#7d8590]">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3fb950] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3fb950]"></span>
-              </span>
-              Live Status
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/transcripts')}
+                className="group relative bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-2 hover:border-[#58a6ff] hover:bg-[#58a6ff]/5 transition-all duration-200 flex items-center gap-2"
+              >
+                <FileText className="h-4 w-4 text-[#58a6ff]" />
+                <span className="text-sm font-medium text-[#e6edf3] group-hover:text-[#58a6ff] transition-colors">Transcripts</span>
+              </button>
+              <button
+                onClick={() => navigate('/feedback')}
+                className="group relative bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-2 hover:border-[#a371f7] hover:bg-[#a371f7]/5 transition-all duration-200 flex items-center gap-2"
+              >
+                <MessageSquareText className="h-4 w-4 text-[#a371f7]" />
+                <span className="text-sm font-medium text-[#e6edf3] group-hover:text-[#a371f7] transition-colors">Feedback</span>
+              </button>
+              <div className="flex items-center gap-2 text-xs text-[#7d8590] ml-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3fb950] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3fb950]"></span>
+                </span>
+                Live Status
+              </div>
             </div>
           </div>
 
           {/* Before Course Enrollment Section */}
           <div className="space-y-6">
-            <div className="flex items-center justify-between pt-2">
-              <div>
-                <h2 className="text-xl font-bold text-[#e6edf3]">Campaign Actions</h2>
-                <p className="text-sm text-[#7d8590] mt-1">Send notifications to leads before enrollment</p>
-              </div>
+            <div>
+              <h2 className="text-2xl font-bold text-[#e6edf3]">Before Course Enrollment</h2>
+              <p className="text-sm text-[#7d8590] mt-1">Lead generation and enrollment tracking</p>
             </div>
             
             {/* Campaign Buttons */}
@@ -378,7 +385,7 @@ const Training = () => {
                   </div>
                   <div className="flex-1 text-left">
                     <div className="text-sm font-semibold text-[#e6edf3] group-hover:text-[#ea4335] transition-colors">
-                      {emailLoading ? 'Sending...' : 'Send Email'}
+                      {emailLoading ? 'Sending...' : 'Email Campaign'}
                     </div>
                     <div className="text-xs text-[#7d8590]">Notify via email</div>
                   </div>
@@ -403,7 +410,7 @@ const Training = () => {
                   </div>
                   <div className="flex-1 text-left">
                     <div className="text-sm font-semibold text-[#e6edf3] group-hover:text-[#1f6feb] transition-colors">
-                      {callLoading ? 'Calling...' : 'Make Calls'}
+                      {callLoading ? 'Calling...' : 'Call Campaign'}
                     </div>
                     <div className="text-xs text-[#7d8590]">Voice outreach</div>
                   </div>
@@ -453,36 +460,33 @@ const Training = () => {
                   </div>
                   <div className="flex-1 text-left">
                     <div className="text-sm font-semibold text-[#e6edf3] group-hover:text-[#a371f7] transition-colors">
-                      {smsLoading ? 'Sending...' : 'Send SMS'}
+                      {smsLoading ? 'Sending...' : 'SMS Campaign'}
                     </div>
                     <div className="text-xs text-[#7d8590]">Text messages</div>
                   </div>
                 </div>
               </button>
             </div>
+            
+            {/* Registration Details Button */}
+            <div className="mt-4">
+              <Button 
+                onClick={() => navigate("/registration-details")}
+                className="bg-[#0d1117] border border-[#30363d] hover:border-[#58a6ff] hover:bg-[#1c2128] text-[#e6edf3] transition-all duration-200"
+              >
+                <ClipboardList className="mr-2 h-4 w-4" />
+                View Registration Details
+              </Button>
+            </div>
           </div>
 
-          {/* Search and Data Table */}
-          <div className="space-y-4">
-            <div className="bg-[#0d1117] border border-[#30363d] rounded-lg p-4">
-              <input
-                type="text"
-                placeholder="Search anything..."
-                className="w-full bg-[#010409] border border-[#30363d] rounded-md px-4 py-2.5 text-sm text-[#e6edf3] placeholder:text-[#7d8590] focus:outline-none focus:border-[#58a6ff] transition-colors"
-              />
-            </div>
-            <div className="bg-[#0d1117] border border-[#30363d] rounded-lg overflow-hidden">
-              <DataTable data={data} />
-            </div>
-          </div>
+          <DataTable data={data} />
           
           {/* After Course Completion Section */}
-          <div className="space-y-6 pt-8 mt-8 border-t border-[#30363d]">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-[#e6edf3]">Feedback Collection</h2>
-                <p className="text-sm text-[#7d8590] mt-1">Collect feedback from completed courses</p>
-              </div>
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold text-[#e6edf3]">After Course Completion</h2>
+              <p className="text-sm text-[#7d8590] mt-1">Post-completion feedback and engagement</p>
             </div>
             
             {/* Feedback Buttons */}
@@ -505,9 +509,9 @@ const Training = () => {
                   </div>
                   <div className="flex-1 text-left">
                     <div className="text-sm font-semibold text-[#e6edf3] group-hover:text-[#ea4335] transition-colors">
-                      {emailFeedbackLoading ? 'Sending...' : 'Send Email'}
+                      {emailFeedbackLoading ? 'Sending...' : 'Email Feedback'}
                     </div>
-                    <div className="text-xs text-[#7d8590]">Email feedback</div>
+                    <div className="text-xs text-[#7d8590]">Collect feedback</div>
                   </div>
                 </div>
               </button>
@@ -530,17 +534,15 @@ const Training = () => {
                   </div>
                   <div className="flex-1 text-left">
                     <div className="text-sm font-semibold text-[#e6edf3] group-hover:text-[#25D366] transition-colors">
-                      {whatsappFeedbackLoading ? 'Sending...' : 'Send WhatsApp'}
+                      {whatsappFeedbackLoading ? 'Sending...' : 'WhatsApp Feedback'}
                     </div>
-                    <div className="text-xs text-[#7d8590]">WhatsApp feedback</div>
+                    <div className="text-xs text-[#7d8590]">Quick responses</div>
                   </div>
                 </div>
               </button>
             </div>
 
-            <div className="bg-[#0d1117] border border-[#30363d] rounded-lg overflow-hidden">
-              <DataTable data={courseCompletionData} />
-            </div>
+            <DataTable data={courseCompletionData} />
           </div>
         </div>
     </main>

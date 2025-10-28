@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import Papa from "papaparse";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, ExternalLink } from "lucide-react";
+import { ArrowLeft, FileText, ExternalLink, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Sidebar from "@/components/layout/Sidebar";
+import SearchBar from "@/components/SearchBar";
 import {
   Table,
   TableBody,
@@ -18,10 +20,12 @@ const TRANSCRIPT_GID = "1792576652";
 
 const Transcripts = () => {
   const [data, setData] = useState<Record<string, any>[]>([]);
-  const [isLoading, setIsLoading] = useState(true); // Start with true for initial load
-  const [isInitialLoad, setIsInitialLoad] = useState(true); // Track initial load
+  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>();
   const [error, setError] = useState<string>("");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [customManagers] = useState<Array<{id: string; name: string; projects: any[]}>>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -85,20 +89,10 @@ const Transcripts = () => {
 
   if (isLoading && isInitialLoad) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center">
-        <div className="text-center space-y-8">
-          <div className="relative inline-block">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 mx-auto flex items-center justify-center animate-pulse shadow-2xl shadow-blue-500/40">
-              <FileText className="w-10 h-10 text-white" />
-            </div>
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-500 to-purple-600 animate-ping opacity-30"></div>
-          </div>
-          <div className="space-y-3">
-            <p className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
-              Loading Transcripts
-            </p>
-            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Fetching call recordings and transcripts...</p>
-          </div>
+      <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="text-slate-400 font-medium">Loading transcripts...</p>
         </div>
       </div>
     );
@@ -106,13 +100,11 @@ const Transcripts = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl border-2 border-red-200/60 dark:border-red-900/60 p-10 space-y-6">
-          <div className="space-y-3">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Error Loading Transcripts</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{error}</p>
-          </div>
-          <Button onClick={() => navigate("/training")} className="w-full">
+      <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-[#161b22] border border-[#30363d] rounded-lg p-8 space-y-4">
+          <h3 className="text-xl font-bold text-[#e6edf3]">Error Loading Transcripts</h3>
+          <p className="text-sm text-[#7d8590]">{error}</p>
+          <Button onClick={() => navigate("/training")} className="w-full bg-[#238636] hover:bg-[#2ea043] text-white">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Training
           </Button>
@@ -122,122 +114,140 @@ const Transcripts = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      {/* Header */}
-      <div className="border-b border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-8 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                onClick={() => navigate("/training")}
-                variant="outline"
-                className="hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Training
-              </Button>
-              <div className="relative">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                  <FileText className="w-6 h-6 text-white" />
-                </div>
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 blur-md opacity-40 -z-10"></div>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 dark:from-white dark:via-slate-200 dark:to-slate-300 bg-clip-text text-transparent">
-                  Call Transcripts
-                </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Call recordings and transcription data
-                </p>
-              </div>
-            </div>
+    <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex">
+      <Sidebar 
+        customManagers={customManagers} 
+        onDeleteManager={() => {}}
+        isCollapsed={isSidebarCollapsed}
+        onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      />
+      <main className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+        {/* Top Bar */}
+        <header className="h-16 border-b border-[#30363d] bg-[#010409] px-6 flex items-center justify-between sticky top-0 z-40">
+          <div className="flex items-center gap-4 flex-1 max-w-2xl">
+            <SearchBar customManagers={JSON.parse(localStorage.getItem("customManagers") || "[]")} />
+          </div>
+          <div className="flex items-center gap-6">
             {lastUpdated && (
-              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 bg-slate-100/50 dark:bg-slate-800/50 px-3 py-2 rounded-lg">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{lastUpdated.toLocaleTimeString()}</span>
+              <div className="flex items-center gap-2 text-xs text-[#7d8590]">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3fb950] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3fb950]"></span>
+                </span>
+                {lastUpdated.toLocaleTimeString()}
               </div>
             )}
+            <button className="relative p-2 text-[#7d8590] hover:text-[#e6edf3] hover:bg-[#1c2128] rounded-md transition-colors">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-[#1f6feb] rounded-full"></span>
+            </button>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center text-xs font-semibold">
+              TR
+            </div>
           </div>
-        </div>
-      </div>
+        </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-8 py-10">
-        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-xl border-2 border-slate-200/60 dark:border-slate-800/60 overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b-2 border-slate-200/80 dark:border-slate-800/80 bg-gradient-to-r from-slate-50 via-blue-50/30 to-purple-50/30 dark:from-slate-800/50 dark:via-slate-800/50 dark:to-slate-800/50">
-                  <TableHead className="whitespace-nowrap h-14 pl-8 font-bold text-sm text-slate-700 dark:text-slate-300">
-                    SL NO.
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap h-14 font-bold text-sm text-slate-700 dark:text-slate-300">
-                    TRANSCRIPT
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap h-14 font-bold text-sm text-slate-700 dark:text-slate-300">
-                    CALL RECORDINGS
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.map((row, idx) => (
-                  <TableRow
-                    key={idx}
-                    className="border-b border-slate-100/80 dark:border-slate-800/80 hover:bg-gradient-to-r hover:from-blue-50/40 hover:via-transparent hover:to-purple-50/40 dark:hover:from-slate-800/40 dark:hover:via-transparent dark:hover:to-slate-800/40 transition-all duration-200"
-                  >
-                    <TableCell className="pl-8 py-5 font-semibold text-slate-700 dark:text-slate-300">
-                      {idx + 1}
-                    </TableCell>
-                    <TableCell className="py-5 text-slate-700 dark:text-slate-300 max-w-md">
-                      <div className="line-clamp-3">
-                        {row["Transcript"] || "No transcript available"}
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-5">
-                      {row["Call Recordings"] ? (
-                        <a
-                          href={row["Call Recordings"]}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          Play Recording
-                        </a>
-                      ) : (
-                        <span className="text-slate-400 dark:text-slate-600 text-sm italic">
-                          No recording
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Footer */}
-          <div className="px-8 py-5 bg-gradient-to-r from-slate-50 via-blue-50/30 to-purple-50/30 dark:from-slate-800/50 dark:via-slate-800/50 dark:to-slate-800/50 border-t-2 border-slate-200/80 dark:border-slate-800/80">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse"></div>
-                <span className="text-slate-600 dark:text-slate-400">
-                  Showing <span className="font-bold text-slate-900 dark:text-white px-1.5 py-0.5 bg-slate-200/60 dark:bg-slate-700/60 rounded-md">{data.length}</span> transcripts
-                </span>
+        {/* Main Content */}
+        <div className="max-w-[1800px] mx-auto p-8 space-y-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate("/training")}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-[#7d8590] hover:text-[#e6edf3] hover:bg-[#1c2128] border border-[#30363d] rounded-md transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </button>
+              <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center">
+                <FileText className="w-4 h-4 text-white" />
               </div>
-              <div className="flex items-center gap-2.5 px-3 py-1.5 bg-blue-100/60 dark:bg-blue-900/20 rounded-full border border-blue-200/60 dark:border-blue-800/60">
-                <div className="relative flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400"></div>
-                  <div className="absolute w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-ping"></div>
+              <div>
+                <h1 className="text-xl font-semibold">Call Transcripts</h1>
+                <p className="text-xs text-[#7d8590]">Call recordings and transcription data</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-[#7d8590]">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3fb950] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3fb950]"></span>
+              </span>
+              Live Status
+            </div>
+          </div>
+
+          <div className="bg-[#0d1117] border border-[#30363d] rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-[#30363d] bg-[#161b22] hover:bg-[#161b22]">
+                    <TableHead className="h-12 px-6 text-xs font-semibold text-[#7d8590] uppercase">
+                      SL NO.
+                    </TableHead>
+                    <TableHead className="h-12 px-6 text-xs font-semibold text-[#7d8590] uppercase">
+                      TRANSCRIPT
+                    </TableHead>
+                    <TableHead className="h-12 px-6 text-xs font-semibold text-[#7d8590] uppercase">
+                      CALL RECORDINGS
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.map((row, idx) => (
+                    <TableRow
+                      key={idx}
+                      className="border-b border-[#21262d] hover:bg-[#161b22] transition-colors"
+                    >
+                      <TableCell className="px-6 py-4 text-[#e6edf3] font-medium">
+                        {idx + 1}
+                      </TableCell>
+                      <TableCell className="px-6 py-4 text-[#e6edf3] max-w-2xl">
+                        <div className="line-clamp-3">
+                          {row["Transcript"] || "No transcript available"}
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-6 py-4">
+                        {row["Call Recordings"] ? (
+                          <a
+                            href={row["Call Recordings"]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white text-sm rounded-md transition-colors"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Play Recording
+                          </a>
+                        ) : (
+                          <span className="text-[#7d8590] text-sm italic">
+                            No recording
+                          </span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-[#161b22] border-t border-[#30363d]">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#7d8590]">
+                    Showing <span className="font-semibold text-[#e6edf3]">{data.length}</span> transcripts
+                  </span>
                 </div>
-                <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">Auto-refreshing every 5s</span>
+                <div className="flex items-center gap-2 text-xs text-[#7d8590]">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#58a6ff] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#58a6ff]"></span>
+                  </span>
+                  Auto-refreshing every 5s
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

@@ -49,7 +49,7 @@ export const SchemeCounter = ({ count }: SchemeCounterProps) => {
           )}
         </div>
         <div className="text-left">
-          <p className="text-xs font-medium text-[#7d8590] group-hover:text-[#8b949e] transition-colors">Registrations</p>
+          <p className="text-xs font-medium text-[#7d8590] group-hover:text-[#8b949e] transition-colors">Completed Leads</p>
           <p className={`text-lg font-bold text-[#e6edf3] tabular-nums tracking-tight transition-all duration-300 ${isAnimating ? 'scale-110 text-[#3fb950]' : 'scale-100'}`}>
             {displayCount.toLocaleString()}
           </p>
