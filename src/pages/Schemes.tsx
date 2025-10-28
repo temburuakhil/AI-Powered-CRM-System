@@ -136,7 +136,7 @@ const Schemes = () => {
     setIsSending(prev => ({ ...prev, sms: true }));
     
     try {
-      const smsWebhookUrl = 'https://saumojitsantra.app.n8n.cloud/webhook/0193f13d-0eba-44d8-a6e6-d2a6441ba63b';
+      const smsWebhookUrl = 'https://aiagentgita.app.n8n.cloud/webhook/0193f13d-0eba-44d8-a6e6-d2a6441ba63b';
       
       console.log('Triggering SMS workflow...', smsWebhookUrl);
       
@@ -170,7 +170,7 @@ const Schemes = () => {
     setIsSending(prev => ({ ...prev, whatsapp: true }));
     
     try {
-      const whatsappWebhookUrl = 'https://saumojitsantra.app.n8n.cloud/webhook/39215fca-cc4f-4cba-93e3-71785137c0b0';
+      const whatsappWebhookUrl = 'https://aiagentgita.app.n8n.cloud/webhook/39215fca-cc4f-4cba-93e3-71785137c0b0';
       
       console.log('Triggering WhatsApp workflow...', whatsappWebhookUrl);
       
@@ -204,7 +204,7 @@ const Schemes = () => {
     setIsSending(prev => ({ ...prev, call: true }));
     
     try {
-      const callWebhookUrl = 'https://saumojitsantra.app.n8n.cloud/webhook/11ff7a36-c129-4a92-84c2-67467d4fafe2';
+      const callWebhookUrl = 'https://aiagentgita.app.n8n.cloud/webhook/11ff7a36-c129-4a92-84c2-67467d4fafe2';
       
       console.log('Triggering Call workflow...', callWebhookUrl);
       
@@ -238,7 +238,7 @@ const Schemes = () => {
     setIsSending(prev => ({ ...prev, email: true }));
     
     try {
-      const emailWebhookUrl = 'https://saumojitsantra.app.n8n.cloud/webhook/79bd7f94-5b20-49dd-80a2-695510868ad5';
+      const emailWebhookUrl = 'https://aiagentgita.app.n8n.cloud/webhook/79bd7f94-5b20-49dd-80a2-695510868ad5';
       
       console.log('Triggering Email workflow...', emailWebhookUrl);
       
