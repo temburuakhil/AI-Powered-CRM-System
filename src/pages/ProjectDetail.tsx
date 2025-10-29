@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, RefreshCw, FileSpreadsheet, FolderOpen, FileText } from "lucide-react";
+import { ArrowLeft, RefreshCw, FileSpreadsheet, FolderOpen, FileText, Trello } from "lucide-react";
 import Papa from "papaparse";
 import { DataTable } from "@/components/DataTable";
 import { EmailCampaign } from "@/components/EmailCampaign";
 import { VoiceCampaign } from "@/components/VoiceCampaign";
+import { KanbanBoard } from "@/components/KanbanBoard";
 import { useToast } from "@/hooks/use-toast";
 
 interface Project {
@@ -37,6 +38,7 @@ const ProjectDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [knowledgeBaseFiles, setKnowledgeBaseFiles] = useState<any[]>([]);
+  const [isKanbanOpen, setIsKanbanOpen] = useState(false);
 
   useEffect(() => {
     // Load project data from localStorage
@@ -231,6 +233,17 @@ const ProjectDetail = () => {
                     </span>
                   </div>
                 )}
+
+                {/* Kanban Board Button */}
+                <button
+                  onClick={() => setIsKanbanOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#1c2128] border border-[#30363d] hover:border-[#58a6ff] hover:bg-[#0d1117] transition-all group"
+                >
+                  <Trello className="w-4 h-4 text-[#58a6ff] group-hover:text-[#79c0ff]" />
+                  <span className="text-sm font-medium text-[#e6edf3] group-hover:text-[#58a6ff]">
+                    Kanban Board
+                  </span>
+                </button>
               </div>
               
               <div className="flex items-center gap-3">
@@ -351,6 +364,15 @@ const ProjectDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Kanban Board Modal */}
+      <KanbanBoard
+        projectId={projectId || ""}
+        managerId={managerId || ""}
+        isOpen={isKanbanOpen}
+        onClose={() => setIsKanbanOpen(false)}
+        data={data}
+      />
     </div>
   );
 };
