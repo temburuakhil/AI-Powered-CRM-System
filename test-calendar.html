@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Google Calendar Integration</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0d1117;
+            color: #e6edf3;
+        }
+        .container {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 30px;
+        }
+        h1 {
+            color: #58a6ff;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid;
+        }
+        .status.success {
+            background: #238636;
+            border-color: #3fb950;
+        }
+        .status.error {
+            background: #da3633;
+            border-color: #f85149;
+        }
+        .status.warning {
+            background: #9e6a03;
+            border-color: #d29922;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:disabled {
+            background: #30363d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        input {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #e6edf3;
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+            margin: 5px 0;
+            box-sizing: border-box;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #7d8590;
+            font-size: 14px;
+        }
+        pre {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .link {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗓️ Google Calendar Integration Test</h1>
+        <p style="color: #7d8590;">Test the calendar event creation before using in Kanban board</p>
+
+        <div id="status"></div>
+
+        <div class="form-group">
+            <label>Event Title:</label>
+            <input type="text" id="eventTitle" value="Test Calendar Event" />
+        </div>
+
+        <div class="form-group">
+            <label>Description:</label>
+            <input type="text" id="eventDescription" value="Testing Google Calendar integration" />
+        </div>
+
+        <div class="form-group">
+            <label>Start Date & Time:</label>
+            <input type="datetime-local" id="startDateTime" />
+        </div>
+
+        <div class="form-group">
+            <label>End Date & Time:</label>
+            <input type="datetime-local" id="endDateTime" />
+        </div>
+
+        <div class="form-group">
+            <label>Attendee Email (optional):</label>
+            <input type="email" id="attendeeEmail" placeholder="user@example.com" />
+        </div>
+
+        <button onclick="checkStatus()">🔍 Check Calendar Status</button>
+        <button onclick="setupCalendar()">⚙️ Setup Calendar</button>
+        <button onclick="createTestEvent()" id="createBtn">✅ Create Test Event</button>
+
+        <div id="response" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        // Set default times (1 hour from now to 2 hours from now)
+        window.onload = function() {
+            const now = new Date();
+            const start = new Date(now.getTime() + 60 * 60 * 1000); // +1 hour
+            const end = new Date(now.getTime() + 2 * 60 * 60 * 1000); // +2 hours
+            
+            document.getElementById('startDateTime').value = formatDateTimeLocal(start);
+            document.getElementById('endDateTime').value = formatDateTimeLocal(end);
+            
+            checkStatus();
+        };
+
+        function formatDateTimeLocal(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+        async function checkStatus() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '<div class="status warning">⏳ Checking calendar status...</div>';
+
+            try {
+                const response = await fetch('http://localhost:3001/api/calendar-status');
+                const data = await response.json();
+
+                if (data.authenticated) {
+                    statusDiv.innerHTML = `
+                        <div class="status success">
+                            ✅ <strong>Calendar Integration Active</strong><br>
+                            Google Calendar is connected and ready to create events.
+                        </div>
+                    `;
+                    document.getElementById('createBtn').disabled = false;
+                } else if (data.enabled) {
+                    statusDiv.innerHTML = `
+                        <div class="status warning">
+                            ⚠️ <strong>Calendar Not Authenticated</strong><br>
+                            Credentials found but OAuth setup needed.<br>
+                            <a href="${data.setupUrl}" target="_blank" class="link">Click here to complete setup →</a>
+                        </div>
+                    `;
+                    document.getElementById('createBtn').disabled = true;
+                } else {
+                    statusDiv.innerHTML = `
+                        <div class="status error">
+                            ❌ <strong>Calendar Not Configured</strong><br>
+                            Missing google-credentials.json file in backend folder.<br>
+                            See PRODUCTION_CALENDAR_GUIDE.md for setup instructions.
+                        </div>
+                    `;
+                    document.getElementById('createBtn').disabled = true;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ <strong>Backend Server Not Running</strong><br>
+                        Cannot connect to http://localhost:3001<br>
+                        Please start the backend server: <code>cd backend && node server.js</code>
+                    </div>
+                `;
+                document.getElementById('createBtn').disabled = true;
+            }
+        }
+
+        function setupCalendar() {
+            window.open('http://localhost:3001/google-calendar-setup', '_blank');
+            setTimeout(checkStatus, 2000);
+        }
+
+        async function createTestEvent() {
+            const responseDiv = document.getElementById('response');
+            const createBtn = document.getElementById('createBtn');
+            
+            createBtn.disabled = true;
+            responseDiv.innerHTML = '<div class="status warning">⏳ Creating calendar event...</div>';
+
+            const startDateTime = document.getElementById('startDateTime').value;
+            const endDateTime = document.getElementById('endDateTime').value;
+
+            if (!startDateTime || !endDateTime) {
+                responseDiv.innerHTML = '<div class="status error">❌ Please fill in start and end date/time</div>';
+                createBtn.disabled = false;
+                return;
+            }
+
+            // Keep in local format (YYYY-MM-DDTHH:mm:ss) - DO NOT convert to UTC
+            // The datetime-local input already gives us the correct format
+            const startLocal = startDateTime + ':00'; // Add seconds
+            const endLocal = endDateTime + ':00';
+
+            const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+            const payload = {
+                summary: document.getElementById('eventTitle').value,
+                description: document.getElementById('eventDescription').value,
+                startDateTime: startLocal,
+                endDateTime: endLocal,
+                attendeeEmail: document.getElementById('attendeeEmail').value || null,
+                timeZone: timeZone
+            };
+
+            console.log('Sending payload:', payload);
+            console.log('Your timezone:', timeZone);
+            console.log('Start time (local):', startLocal);
+            console.log('End time (local):', endLocal);
+
+            try {
+                const response = await fetch('http://localhost:3001/api/create-calendar-event', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                console.log('Response:', result);
+
+                if (result.success) {
+                    responseDiv.innerHTML = `
+                        <div class="status success">
+                            ✅ <strong>Calendar Event Created Successfully!</strong><br><br>
+                            <strong>Event ID:</strong> ${result.eventId}<br>
+                            <strong>Calendar Link:</strong> <a href="${result.eventLink}" target="_blank" class="link">Open in Google Calendar →</a><br>
+                            ${result.meetLink ? `<strong>Google Meet:</strong> <a href="${result.meetLink}" target="_blank" class="link">Join Meeting →</a><br>` : ''}
+                            <br>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    responseDiv.innerHTML = `
+                        <div class="status error">
+                            ❌ <strong>Failed to Create Event</strong><br><br>
+                            <strong>Error:</strong> ${result.message || result.error}<br>
+                            ${result.needsReauth ? '<br>You need to re-authenticate. <a href="http://localhost:3001/google-calendar-setup" target="_blank" class="link">Setup Calendar →</a>' : ''}
+                            <br>
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ <strong>Request Failed</strong><br><br>
+                        ${error.message}<br>
+                        <br>Check browser console for details.
+                    </div>
+                `;
+                console.error('Error:', error);
+            } finally {
+                createBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

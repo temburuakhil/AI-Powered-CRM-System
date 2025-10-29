@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Google Calendar OAuth credentials (NEVER commit these!)
+backend/google-credentials.json
+backend/google-tokens.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

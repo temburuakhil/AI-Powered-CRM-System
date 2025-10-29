@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -22,6 +24,11 @@ interface Task {
   description?: string;
   assignee?: string;
   columnId: string;
+  startDate?: string;
+  startTime?: string;
+  endDate?: string;
+  endTime?: string;
+  calendarEventId?: string;
 }
 
 interface Column {
@@ -61,10 +68,50 @@ export const KanbanBoard = ({ projectId, managerId, isOpen, onClose, data = [] }
   const [editTaskTitle, setEditTaskTitle] = useState("");
   const [editTaskDescription, setEditTaskDescription] = useState("");
   const [editTaskAssignee, setEditTaskAssignee] = useState("");
+  const [editTaskStartDate, setEditTaskStartDate] = useState("");
+  const [editTaskStartTime, setEditTaskStartTime] = useState("");
+  const [editTaskEndDate, setEditTaskEndDate] = useState("");
+  const [editTaskEndTime, setEditTaskEndTime] = useState("");
   const [showEditCustomAssignee, setShowEditCustomAssignee] = useState(false);
   
   const { toast } = useToast();
   const geminiApiKey = "AIzaSyD7vSRpYuUElu_2FcvQYhVPRnmXAAbPG_A";
+  const [calendarEnabled, setCalendarEnabled] = useState(false);
+
+  // Check calendar integration status
+  useEffect(() => {
+    const checkCalendarStatus = async () => {
+      try {
+        console.log('🔍 Checking calendar status...');
+        const response = await fetch("http://localhost:3001/api/calendar-status");
+        
+        if (!response.ok) {
+          console.error('❌ Calendar status check failed:', response.status, response.statusText);
+          setCalendarEnabled(false);
+          return;
+        }
+        
+        const data = await response.json();
+        console.log('📅 Calendar status response:', data);
+        
+        const isEnabled = data.enabled && data.authenticated;
+        setCalendarEnabled(isEnabled);
+        
+        if (isEnabled) {
+          console.log('✅ Google Calendar integration is ENABLED and authenticated');
+        } else if (!data.authenticated) {
+          console.log("⚠️ Calendar integration not authenticated. Visit http://localhost:3001/google-calendar-setup");
+        } else if (!data.enabled) {
+          console.log("⚠️ Calendar integration disabled in backend");
+        }
+      } catch (error) {
+        console.error("❌ Calendar service unavailable:", error);
+        setCalendarEnabled(false);
+      }
+    };
+    
+    checkCalendarStatus();
+  }, []);
 
   // Extract unique names from data
   const availableAssignees = Array.from(
@@ -87,10 +134,13 @@ export const KanbanBoard = ({ projectId, managerId, isOpen, onClose, data = [] }
     if (stored) {
       try {
         const parsedData = JSON.parse(stored);
+        console.log('📂 Loaded kanban data from localStorage:', parsedData);
         setColumns(parsedData);
       } catch (error) {
         console.error("Error loading kanban data:", error);
       }
+    } else {
+      console.log('ℹ️ No stored kanban data found');
     }
   }, [storageKey]);
 
@@ -140,10 +190,24 @@ export const KanbanBoard = ({ projectId, managerId, isOpen, onClose, data = [] }
 
   // Open edit dialog
   const openEditTask = (task: Task) => {
+    console.log('📝 Opening task for edit:');
+    console.log('  Title:', task.title);
+    console.log('  Assignee:', task.assignee);
+    console.log('  Start Date:', task.startDate);
+    console.log('  Start Time:', task.startTime);
+    console.log('  End Date:', task.endDate);
+    console.log('  End Time:', task.endTime);
+    console.log('  Calendar Event ID:', task.calendarEventId);
+    console.log('  Full task object:', JSON.stringify(task, null, 2));
+    
     setEditingTask(task);
     setEditTaskTitle(task.title);
     setEditTaskDescription(task.description || "");
     setEditTaskAssignee(task.assignee || "");
+    setEditTaskStartDate(task.startDate || "");
+    setEditTaskStartTime(task.startTime || "");
+    setEditTaskEndDate(task.endDate || "");
+    setEditTaskEndTime(task.endTime || "");
     setShowEditCustomAssignee(false);
   };
 
@@ -153,6 +217,18 @@ export const KanbanBoard = ({ projectId, managerId, isOpen, onClose, data = [] }
 
     const previousAssignee = editingTask.assignee;
     const newAssignee = editTaskAssignee;
+    
+    // Check if dates are provided for calendar event
+    const shouldCreateCalendarEvent = editTaskStartDate && editTaskStartTime && editTaskEndDate && editTaskEndTime;
+    let calendarEventId = editingTask.calendarEventId;
+
+    console.log('💾 Saving task:');
+    console.log('  Title:', editTaskTitle);
+    console.log('  Assignee:', editTaskAssignee);
+    console.log('  Start Date:', editTaskStartDate);
+    console.log('  Start Time:', editTaskStartTime);
+    console.log('  End Date:', editTaskEndDate);
+    console.log('  End Time:', editTaskEndTime);
 
     const updatedColumns = columns.map((col) =>
       col.id === editingTask.columnId
@@ -165,6 +241,11 @@ export const KanbanBoard = ({ projectId, managerId, isOpen, onClose, data = [] }
                     title: editTaskTitle,
                     description: editTaskDescription,
                     assignee: editTaskAssignee,
+                    startDate: editTaskStartDate,
+                    startTime: editTaskStartTime,
+                    endDate: editTaskEndDate,
+                    endTime: editTaskEndTime,
+                    calendarEventId: calendarEventId,
                   }
                 : t
             ),
@@ -174,6 +255,14 @@ export const KanbanBoard = ({ projectId, managerId, isOpen, onClose, data = [] }
 
     setColumns(updatedColumns);
     saveToLocalStorage(updatedColumns);
+    
+    console.log('✅ Task saved to localStorage');
+    
+    // Verify what was saved
+    const savedTask = updatedColumns
+      .find(col => col.id === editingTask.columnId)
+      ?.tasks.find(t => t.id === editingTask.id);
+    console.log('📋 Saved task data:', JSON.stringify(savedTask, null, 2));
     
     toast({
       title: "Task Updated",
@@ -185,11 +274,50 @@ export const KanbanBoard = ({ projectId, managerId, isOpen, onClose, data = [] }
       await sendTaskAssignmentEmail(editTaskTitle, editTaskDescription, newAssignee);
     }
 
+    // Create Google Calendar event if dates are provided
+    if (shouldCreateCalendarEvent && !calendarEventId) {
+      console.log('Calendar event conditions met:', {
+        shouldCreateCalendarEvent,
+        calendarEventId,
+        calendarEnabled,
+        dates: {
+          startDate: editTaskStartDate,
+          startTime: editTaskStartTime,
+          endDate: editTaskEndDate,
+          endTime: editTaskEndTime
+        }
+      });
+      
+      if (calendarEnabled) {
+        await createGoogleCalendarEvent(
+          editTaskTitle,
+          editTaskDescription,
+          editTaskAssignee,
+          editTaskStartDate,
+          editTaskStartTime,
+          editTaskEndDate,
+          editTaskEndTime,
+          editingTask.id
+        );
+      } else {
+        console.warn('Calendar event not created: Calendar integration not enabled');
+        toast({
+          title: "⚠️ Calendar Not Configured",
+          description: "Please set up Google Calendar integration to sync events",
+          variant: "destructive",
+        });
+      }
+    }
+
     // Close edit dialog
     setEditingTask(null);
     setEditTaskTitle("");
     setEditTaskDescription("");
     setEditTaskAssignee("");
+    setEditTaskStartDate("");
+    setEditTaskStartTime("");
+    setEditTaskEndDate("");
+    setEditTaskEndTime("");
     setShowEditCustomAssignee(false);
   };
 
@@ -333,6 +461,126 @@ Project Management System`,
       }
     } catch (error) {
       console.error("Error sending completion email:", error);
+    }
+  };
+
+  // Create Google Calendar Event
+  const createGoogleCalendarEvent = async (
+    taskTitle: string,
+    taskDescription: string,
+    assigneeName: string,
+    startDate: string,
+    startTime: string,
+    endDate: string,
+    endTime: string,
+    taskId: string
+  ) => {
+    try {
+      // Find assignee email from data
+      let attendeeEmail = "";
+      if (assigneeName) {
+        const assigneeData = data.find((row) => {
+          const nameKey = Object.keys(row).find(key => 
+            key.toLowerCase().includes('name')
+          );
+          return nameKey && String(row[nameKey]).trim() === assigneeName;
+        });
+
+        if (assigneeData) {
+          const emailKey = Object.keys(assigneeData).find(key => 
+            key.toLowerCase().includes('email')
+          );
+          if (emailKey) {
+            attendeeEmail = assigneeData[emailKey];
+          }
+        }
+      }
+
+      // Combine date and time to create proper ISO datetime strings with timezone
+      // Format: YYYY-MM-DDTHH:mm:ss (will be sent to backend which adds timezone)
+      const startDateTime = `${startDate}T${startTime}:00`;
+      const endDateTime = `${endDate}T${endTime}:00`;
+      
+      // Get local timezone
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      console.log('Creating calendar event:', {
+        startDateTime,
+        endDateTime,
+        timeZone
+      });
+
+      // Create calendar event via backend
+      const response = await fetch("http://localhost:3001/api/create-calendar-event", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          summary: taskTitle,
+          description: `${taskDescription || 'No description provided'}\n\nAssigned to: ${assigneeName || 'Unassigned'}\nProject: ${projectId}\nManager: ${managerId}`,
+          startDateTime: startDateTime,
+          endDateTime: endDateTime,
+          attendeeEmail: attendeeEmail,
+          timeZone: timeZone,
+        }),
+      });
+
+      const result = await response.json();
+      console.log("Calendar API response:", result);
+
+      if (result.success) {
+        // Update task with calendar event ID while preserving all other data
+        setColumns(prevColumns => {
+          const updatedColumns = prevColumns.map((col) => ({
+            ...col,
+            tasks: col.tasks.map((t) =>
+              t.id === taskId
+                ? { ...t, calendarEventId: result.eventId }
+                : t
+            ),
+          }));
+          
+          saveToLocalStorage(updatedColumns);
+          
+          // Log the updated task to verify
+          const updatedTask = updatedColumns
+            .flatMap(col => col.tasks)
+            .find(t => t.id === taskId);
+          console.log('📅 Task after calendar sync:', JSON.stringify(updatedTask, null, 2));
+          
+          return updatedColumns;
+        });
+
+        toast({
+          title: "✅ Calendar Event Created",
+          description: `Event synced to Google Calendar${result.meetLink ? ' with Google Meet link' : ''}`,
+        });
+      } else {
+        console.error("Calendar creation failed:", result);
+        
+        // Check if needs re-authentication
+        if (result.needsReauth) {
+          toast({
+            title: "⚠️ Calendar Setup Required",
+            description: "Visit http://localhost:3001/google-calendar-setup to connect",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Calendar Event Failed",
+            description: result.message || result.error || "Could not create calendar event",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error creating calendar event:", error);
+      toast({
+        title: "Calendar Error",
+        description: "Failed to create Google Calendar event",
+        variant: "destructive",
+      });
     }
   };
 
@@ -628,10 +876,13 @@ Return ONLY a valid JSON array with this exact structure (no additional text):
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] max-h-[90vh] bg-[#0d1117] border-[#30363d] text-[#e6edf3] p-0 overflow-hidden [&>button]:hidden">
+        <DialogTitle className="sr-only">Project Board</DialogTitle>
+        <DialogDescription className="sr-only">Manage project tasks across different stages</DialogDescription>
+        
         {/* Custom Header */}
         <div className="px-6 py-4 border-b border-[#30363d] flex items-center justify-between bg-[#010409]">
           <div className="flex items-center gap-4">
-            <h2 className="text-xl font-semibold text-[#e6edf3]">Project Board</h2>
+            <h2 className="text-xl font-semibold text-[#e6edf3]" aria-hidden="true">Project Board</h2>
             <Button
               onClick={generateTasksWithAI}
               disabled={isGeneratingTasks}
@@ -779,14 +1030,45 @@ Return ONLY a valid JSON array with this exact structure (no additional text):
                         </p>
                       )}
                       
-                      {task.assignee && (
-                        <div className="flex items-center gap-2">
+                      {/* Assignee Display */}
+                      {task.assignee && task.assignee !== '__unassigned__' && (
+                        <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-[#1c2128] rounded-md border border-[#30363d]">
                           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center flex-shrink-0">
                             <span className="text-xs font-semibold text-white">
                               {task.assignee.charAt(0).toUpperCase()}
                             </span>
                           </div>
-                          <span className="text-xs text-[#7d8590]">{task.assignee}</span>
+                          <span className="text-xs font-medium text-[#e6edf3]">{task.assignee}</span>
+                        </div>
+                      )}
+                      
+                      {/* Date and Time Display */}
+                      {(task.startDate || task.endDate) && (
+                        <div className="space-y-1.5 mb-2 px-2 py-2 bg-[#0d1117] rounded-md border border-[#21262d]">
+                          {task.startDate && (
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-green-400 font-bold">▶</span>
+                              <div className="flex flex-col">
+                                <span className="text-[#7d8590] text-[10px] uppercase tracking-wide">Start</span>
+                                <span className="text-[#e6edf3] font-medium">{task.startDate} {task.startTime}</span>
+                              </div>
+                            </div>
+                          )}
+                          {task.endDate && (
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-red-400 font-bold">⏹</span>
+                              <div className="flex flex-col">
+                                <span className="text-[#7d8590] text-[10px] uppercase tracking-wide">Deadline</span>
+                                <span className="text-[#e6edf3] font-medium">{task.endDate} {task.endTime}</span>
+                              </div>
+                            </div>
+                          )}
+                          {task.calendarEventId && (
+                            <div className="flex items-center gap-2 mt-2 pt-1.5 border-t border-[#30363d]">
+                              <span className="text-sm">📅</span>
+                              <span className="text-[10px] text-[#3fb950] font-medium uppercase tracking-wide">Synced to Google Calendar</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -912,26 +1194,30 @@ Return ONLY a valid JSON array with this exact structure (no additional text):
       {/* Edit Task Dialog */}
       {editingTask && (
         <Dialog open={!!editingTask} onOpenChange={() => setEditingTask(null)}>
-          <DialogContent className="max-w-2xl bg-[#0d1117] border-[#30363d] text-[#e6edf3] [&>button]:hidden">
-            <div className="px-6 py-4 border-b border-[#30363d] flex items-center justify-between bg-[#010409]">
+          <DialogContent className="max-w-2xl max-h-[90vh] bg-[#0d1117] border-[#30363d] text-[#e6edf3] [&>button]:hidden p-0 overflow-hidden flex flex-col">
+            <DialogTitle className="sr-only">Edit Task</DialogTitle>
+            <DialogDescription className="sr-only">Update task details and assign team members</DialogDescription>
+            
+            <div className="px-6 py-4 border-b border-[#30363d] flex items-center justify-between bg-[#010409] flex-shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center">
                   <Edit2 className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-[#e6edf3]">Edit Task</h2>
-                  <p className="text-sm text-[#7d8590]">Update task details and assign team members</p>
+                  <h2 className="text-xl font-semibold text-[#e6edf3]" aria-hidden="true">Edit Task</h2>
+                  <p className="text-sm text-[#7d8590]" aria-hidden="true">Update task details and assign team members</p>
                 </div>
               </div>
               <button
                 onClick={() => setEditingTask(null)}
                 className="p-1.5 rounded-md hover:bg-[#1c2128] transition-colors"
+                aria-label="Close dialog"
               >
                 <X className="w-5 h-5 text-[#7d8590] hover:text-[#e6edf3]" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
               {/* Task Title */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-[#e6edf3]">Task Title *</label>
@@ -1025,14 +1311,106 @@ Return ONLY a valid JSON array with this exact structure (no additional text):
                 )}
               </div>
 
+              {/* Date and Time Section */}
+              <div className="border-t border-[#30363d] pt-4 space-y-4">
+                <h3 className="text-sm font-medium text-[#e6edf3] flex items-center gap-2">
+                  <span className="text-[#58a6ff]">📅</span>
+                  Schedule & Deadline
+                </h3>
+                
+                {/* Start Date and Time - Side by Side */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-[#7d8590]">Start Date</label>
+                    <Input
+                      type="date"
+                      value={editTaskStartDate}
+                      onChange={(e) => setEditTaskStartDate(e.target.value)}
+                      className="bg-[#010409] border-[#30363d] text-[#e6edf3] [color-scheme:dark]"
+                      placeholder="dd-mm-yyyy"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-[#7d8590]">Start Time</label>
+                    <Input
+                      type="time"
+                      value={editTaskStartTime}
+                      onChange={(e) => setEditTaskStartTime(e.target.value)}
+                      className="bg-[#010409] border-[#30363d] text-[#e6edf3] [color-scheme:dark]"
+                      placeholder="--:--"
+                    />
+                  </div>
+                </div>
+
+                {/* End Date and Time - Side by Side */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-[#7d8590]">End Date (Deadline)</label>
+                    <Input
+                      type="date"
+                      value={editTaskEndDate}
+                      onChange={(e) => setEditTaskEndDate(e.target.value)}
+                      className="bg-[#010409] border-[#30363d] text-[#e6edf3] [color-scheme:dark]"
+                      placeholder="dd-mm-yyyy"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-[#7d8590]">End Time</label>
+                    <Input
+                      type="time"
+                      value={editTaskEndTime}
+                      onChange={(e) => setEditTaskEndTime(e.target.value)}
+                      className="bg-[#010409] border-[#30363d] text-[#e6edf3] [color-scheme:dark]"
+                      placeholder="--:--"
+                    />
+                  </div>
+                </div>
+
+                {/* Calendar Status/Action */}
+                {editTaskStartDate && editTaskStartTime && editTaskEndDate && editTaskEndTime && (
+                  <div className="space-y-2">
+                    {calendarEnabled ? (
+                      <div className="flex items-center justify-between gap-3 px-3 py-2 bg-[#238636]/10 border border-[#238636]/30 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-[#3fb950]">✓ Ready to sync with Google Calendar</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            // This will be triggered when save is clicked
+                          }}
+                          className="text-xs px-3 py-1 bg-[#238636] hover:bg-[#2ea043] text-white rounded-md transition-colors flex items-center gap-1.5"
+                        >
+                          <span>📅</span>
+                          <span>Will sync on save</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2 px-3 py-2 bg-[#58a6ff]/10 border border-[#58a6ff]/30 rounded-md">
+                        <span className="text-xs text-[#58a6ff]">ℹ️ Calendar integration available but not configured</span>
+                        <a 
+                          href="http://localhost:3001/google-calendar-setup" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#58a6ff] hover:underline font-medium"
+                        >
+                          → Click here to connect Google Calendar
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
                 <Button
                   onClick={saveEditedTask}
                   disabled={!editTaskTitle.trim()}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold"
                 >
-                  Save Changes
+                  {editTaskStartDate && editTaskStartTime && editTaskEndDate && editTaskEndTime && calendarEnabled
+                    ? '💾 Save & Add to Calendar'
+                    : '💾 Save Changes'}
                 </Button>
                 <Button
                   onClick={() => setEditingTask(null)}

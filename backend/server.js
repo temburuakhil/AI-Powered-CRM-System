@@ -2,6 +2,7 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const { google } = require('googleapis');
+const googleAuth = require('./google-auth');
 require('dotenv').config();
 
 const app = express();
@@ -9,6 +10,14 @@ const PORT = process.env.PORT || 3001;
 
 // API Hit Counter
 let apiHitCount = 0;
+
+// Initialize Google Calendar authentication
+const calendarEnabled = googleAuth.initialize();
+if (calendarEnabled) {
+  console.log('📅 Google Calendar integration: ENABLED');
+} else {
+  console.log('📅 Google Calendar integration: DISABLED (configure credentials to enable)');
+}
 
 // Middleware
 app.use(cors());
@@ -1086,6 +1095,537 @@ app.post('/api/retell/create-knowledge-base', async (req, res) => {
       message: error.message || 'Internal server error',
     });
   }
+});
+
+// Google Calendar - Create Event endpoint (Production-Ready)
+app.post('/api/create-calendar-event', async (req, res) => {
+  try {
+    // Check if Calendar integration is enabled
+    if (!googleAuth.isAuthenticated()) {
+      return res.status(503).json({
+        success: false,
+        message: 'Google Calendar integration not configured',
+        error: 'Please complete OAuth setup first',
+      });
+    }
+
+    const { 
+      summary, 
+      description, 
+      startDateTime, 
+      endDateTime, 
+      attendeeEmail,
+      timeZone 
+    } = req.body;
+
+    // Validate required fields
+    if (!summary || !startDateTime || !endDateTime) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields: summary, startDateTime, endDateTime' 
+      });
+    }
+
+    // Get authenticated calendar client
+    const calendar = googleAuth.getCalendarClient();
+
+    console.log('Calendar event request:', {
+      summary,
+      startDateTime,
+      endDateTime,
+      timeZone: timeZone || 'Asia/Kolkata'
+    });
+
+    // Prepare event details
+    const event = {
+      summary: summary,
+      description: description,
+      start: {
+        dateTime: startDateTime,
+        timeZone: timeZone || 'Asia/Kolkata',
+      },
+      end: {
+        dateTime: endDateTime,
+        timeZone: timeZone || 'Asia/Kolkata',
+      },
+      attendees: attendeeEmail ? [{ email: attendeeEmail }] : [],
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: 'email', minutes: 24 * 60 },  // 1 day before
+          { method: 'popup', minutes: 30 },        // 30 minutes before
+        ],
+      },
+      conferenceData: {
+        createRequest: {
+          requestId: `task-${Date.now()}`,
+          conferenceSolutionKey: { type: 'hangoutsMeet' }
+        }
+      }
+    };
+
+    console.log('Creating Google Calendar event:', summary);
+    console.log('Event start:', event.start);
+    console.log('Event end:', event.end);
+    if (attendeeEmail) {
+      console.log('Adding attendee:', attendeeEmail);
+    }
+
+    // Create event with automatic token refresh
+    const response = await calendar.events.insert({
+      calendarId: 'primary',
+      sendUpdates: attendeeEmail ? 'all' : 'none',
+      conferenceDataVersion: 1,
+      resource: event,
+    });
+
+    console.log('✅ Calendar event created:', response.data.id);
+    console.log('Event link:', response.data.htmlLink);
+
+    res.json({
+      success: true,
+      message: 'Calendar event created successfully',
+      eventId: response.data.id,
+      eventLink: response.data.htmlLink,
+      meetLink: response.data.hangoutLink || null,
+      data: response.data,
+    });
+
+  } catch (error) {
+    console.error('Error creating calendar event:', error);
+    
+    // Handle specific Google API errors
+    if (error.code === 401 || error.code === 403) {
+      // Try to refresh token
+      try {
+        await googleAuth.refreshAccessToken();
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication expired. Please try again.',
+          error: 'Token refreshed, retry request',
+        });
+      } catch (refreshError) {
+        return res.status(401).json({
+          success: false,
+          message: 'Google Calendar authentication failed. Please re-authenticate.',
+          error: 'Invalid or expired refresh token',
+          needsReauth: true,
+        });
+      }
+    }
+
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || 'Failed to create calendar event',
+      error: error.toString()
+    });
+  }
+});
+
+// Google Calendar - OAuth2 Callback (Production Setup)
+app.get('/oauth2callback', async (req, res) => {
+  try {
+    const code = req.query.code;
+
+    if (!code) {
+      return res.status(400).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>OAuth Error</title>
+          <style>
+            body { font-family: Arial; padding: 40px; text-align: center; background: #f44336; color: white; }
+            .container { background: white; color: #333; padding: 40px; border-radius: 10px; max-width: 500px; margin: 0 auto; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>❌ Authorization Failed</h1>
+            <p>No authorization code received.</p>
+            <p><a href="/google-calendar-setup">Try again</a></p>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    // Exchange code for tokens
+    await googleAuth.getTokensFromCode(code);
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Calendar Setup Complete</title>
+        <style>
+          body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            padding: 0; 
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+          }
+          .container { 
+            background: white; 
+            padding: 50px; 
+            border-radius: 15px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            text-align: center;
+          }
+          .checkmark {
+            font-size: 80px;
+            color: #4CAF50;
+            margin-bottom: 20px;
+            animation: scaleIn 0.5s ease-out;
+          }
+          @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+          }
+          h1 { color: #333; margin-bottom: 10px; }
+          p { color: #666; line-height: 1.8; font-size: 16px; }
+          .success-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4CAF50;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: left;
+          }
+          .next-steps {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            text-align: left;
+          }
+          .next-steps h3 { margin-top: 0; color: #333; }
+          .next-steps ol { color: #666; line-height: 2; }
+          .button {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin-top: 20px;
+            font-weight: bold;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="checkmark">✓</div>
+          <h1>🎉 Google Calendar Setup Complete!</h1>
+          
+          <div class="success-box">
+            <strong>✅ Authentication Successful</strong><br>
+            Your application can now create calendar events automatically.
+          </div>
+
+          <div class="next-steps">
+            <h3>📋 Next Steps:</h3>
+            <ol>
+              <li>Calendar integration is now active</li>
+              <li>Create or edit tasks in Kanban board</li>
+              <li>Add start/end dates and times</li>
+              <li>Events will sync to your Google Calendar</li>
+            </ol>
+          </div>
+
+          <p style="margin-top: 30px; color: #999; font-size: 14px;">
+            You can safely close this window now.
+          </p>
+        </div>
+      </body>
+      </html>
+    `);
+
+  } catch (error) {
+    console.error('OAuth callback error:', error);
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Setup Error</title>
+        <style>
+          body { font-family: Arial; padding: 40px; text-align: center; background: #f44336; color: white; }
+          .container { background: white; color: #333; padding: 40px; border-radius: 10px; max-width: 500px; margin: 0 auto; }
+          .error { color: #f44336; background: #ffebee; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>❌ Setup Error</h1>
+          <div class="error">${error.message}</div>
+          <p><a href="/google-calendar-setup">Try again</a></p>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+});
+
+// Google Calendar - Setup Page (Production Interface)
+app.get('/google-calendar-setup', (req, res) => {
+  try {
+    if (googleAuth.isAuthenticated()) {
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Calendar Already Configured</title>
+          <style>
+            body { 
+              font-family: Arial; 
+              padding: 40px; 
+              text-align: center; 
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              min-height: 100vh;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              margin: 0;
+            }
+            .container { 
+              background: white; 
+              padding: 50px; 
+              border-radius: 15px; 
+              max-width: 600px;
+              box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }
+            .status { color: #4CAF50; font-size: 60px; margin-bottom: 20px; }
+            h1 { color: #333; }
+            p { color: #666; line-height: 1.8; }
+            .button {
+              display: inline-block;
+              background: #f44336;
+              color: white;
+              padding: 12px 30px;
+              border-radius: 5px;
+              text-decoration: none;
+              margin-top: 20px;
+              font-weight: bold;
+            }
+            .info-box {
+              background: #e3f2fd;
+              border-left: 4px solid #2196F3;
+              padding: 15px;
+              margin: 20px 0;
+              text-align: left;
+              border-radius: 5px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="status">✓</div>
+            <h1>Calendar Integration Active</h1>
+            <p>Google Calendar is already configured and working.</p>
+            
+            <div class="info-box">
+              <strong>📅 Status:</strong> Connected<br>
+              <strong>🔑 Authentication:</strong> Valid<br>
+              <strong>✉️ Events:</strong> Will be created automatically
+            </div>
+
+            <p>To reconfigure authentication:</p>
+            <a href="/google-calendar-revoke" class="button">Revoke & Reconfigure</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    const authUrl = googleAuth.getAuthUrl();
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Google Calendar Setup</title>
+        <style>
+          body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            padding: 0; 
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+          .container { 
+            background: white; 
+            padding: 50px; 
+            border-radius: 15px; 
+            max-width: 700px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          }
+          h1 { color: #333; margin-bottom: 10px; }
+          .subtitle { color: #666; margin-bottom: 30px; font-size: 18px; }
+          .steps {
+            background: #f5f5f5;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 30px 0;
+            text-align: left;
+          }
+          .steps h3 { margin-top: 0; color: #333; }
+          .steps ol { color: #666; line-height: 2; padding-left: 20px; }
+          .steps li { margin: 10px 0; }
+          .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: transform 0.2s;
+          }
+          .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+          }
+          .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+          }
+          .icon { font-size: 48px; text-align: center; margin-bottom: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="icon">📅</div>
+          <h1>Google Calendar Integration Setup</h1>
+          <p class="subtitle">Connect your Google Calendar to automatically create events from tasks</p>
+
+          <div class="steps">
+            <h3>🚀 What This Does:</h3>
+            <ol>
+              <li><strong>Automatic Events:</strong> Tasks with dates create calendar events</li>
+              <li><strong>Email Invites:</strong> Assignees receive calendar invitations</li>
+              <li><strong>Smart Reminders:</strong> Auto-configured email & popup alerts</li>
+              <li><strong>Google Meet:</strong> Video call links added automatically</li>
+            </ol>
+          </div>
+
+          <div class="warning">
+            <strong>⚠️ Important:</strong> Click the button below to authorize calendar access. 
+            You'll be redirected to Google to grant permissions.
+          </div>
+
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="${authUrl}" class="button">
+              🔐 Connect Google Calendar
+            </a>
+          </div>
+
+          <p style="text-align: center; margin-top: 30px; color: #999; font-size: 14px;">
+            Your credentials are stored securely on this server.<br>
+            You can revoke access anytime from your Google Account settings.
+          </p>
+        </div>
+      </body>
+      </html>
+    `);
+
+  } catch (error) {
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: Arial; padding: 40px; text-align: center;">
+        <h1 style="color: #f44336;">❌ Setup Error</h1>
+        <p>Google Calendar integration is not properly configured.</p>
+        <p style="color: #666;">Error: ${error.message}</p>
+        <p style="margin-top: 30px;">
+          <strong>Please ensure:</strong><br>
+          1. google-credentials.json file exists in backend folder<br>
+          2. File contains valid OAuth 2.0 credentials<br>
+          3. Google Calendar API is enabled in Cloud Console
+        </p>
+      </body>
+      </html>
+    `);
+  }
+});
+
+// Google Calendar - Revoke Authentication
+app.get('/google-calendar-revoke', async (req, res) => {
+  try {
+    await googleAuth.revokeAuth();
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Authentication Revoked</title>
+        <style>
+          body { 
+            font-family: Arial; 
+            padding: 40px; 
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+          }
+          .container { 
+            background: white; 
+            padding: 50px; 
+            border-radius: 15px; 
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          }
+          .icon { font-size: 60px; color: #ff9800; margin-bottom: 20px; }
+          h1 { color: #333; }
+          p { color: #666; line-height: 1.8; }
+          .button {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin-top: 20px;
+            font-weight: bold;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="icon">🔓</div>
+          <h1>Authentication Revoked</h1>
+          <p>Google Calendar access has been removed.</p>
+          <p>To use calendar integration again, complete the setup process.</p>
+          <a href="/google-calendar-setup" class="button">Setup Again</a>
+        </div>
+      </body>
+      </html>
+    `);
+  } catch (error) {
+    res.status(500).send('Error revoking authentication: ' + error.message);
+  }
+});
+
+// Google Calendar - Status Check API
+app.get('/api/calendar-status', (req, res) => {
+  res.json({
+    enabled: calendarEnabled,
+    authenticated: googleAuth.isAuthenticated(),
+    setupUrl: '/google-calendar-setup'
+  });
 });
 
 // Start server
