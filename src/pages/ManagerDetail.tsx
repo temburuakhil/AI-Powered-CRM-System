@@ -172,7 +172,7 @@ const ManagerDetail = () => {
               <div
                 key={project.id}
                 onClick={() => navigate(`/manager/${managerId}/project/${project.id}`)}
-                className="group bg-[#0d1117] border border-[#30363d] rounded-lg p-5 hover:border-[#58a6ff] hover:bg-[#0d1117]/80 transition-all cursor-pointer min-h-[200px] flex flex-col"
+                className="group relative bg-[#0d1117] border border-[#30363d] rounded-lg p-5 hover:border-[#58a6ff] hover:bg-[#0d1117]/80 transition-all cursor-pointer min-h-[200px] flex flex-col"
               >
                 {/* Delete Button */}
                 <button
