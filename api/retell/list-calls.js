@@ -1,8 +1,6 @@
-import { Retell } from 'retell-sdk';
+// Vercel Serverless Function for Retell AI with HuggingFace Lead Scoring
 
-// HuggingFace API configuration
 const HF_API_URL = 'https://api-inference.huggingface.co/models/SamLowe/roberta-base-go_emotions';
-const HF_API_KEY = process.env.HUGGINGFACE_API_KEY;
 
 // Analyze sentiment using Hugging Face RoBERTa model
 async function analyzeSentimentHF(text) {
@@ -15,7 +13,7 @@ async function analyzeSentimentHF(text) {
       'Content-Type': 'application/json'
     };
     
-    // Add authorization if API key is available
+    const HF_API_KEY = process.env.HUGGINGFACE_API_KEY;
     if (HF_API_KEY) {
       headers['Authorization'] = `Bearer ${HF_API_KEY}`;
     }
@@ -24,7 +22,7 @@ async function analyzeSentimentHF(text) {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
-        inputs: text.substring(0, 512) // Limit to 512 characters for RoBERTa
+        inputs: text.substring(0, 512)
       })
     });
 
@@ -35,15 +33,12 @@ async function analyzeSentimentHF(text) {
 
     const result = await response.json();
     
-    // Handle model loading state (HF Inference API may need time to load model)
     if (result.error && result.error.includes('loading')) {
-      console.log('HuggingFace model is loading, will retry on next call...');
+      console.log('HuggingFace model is loading...');
       return null;
     }
     
-    // Result is array of arrays with label-score pairs
     if (Array.isArray(result) && result[0]) {
-      // Sort by score to get top emotions
       const emotions = result[0].sort((a, b) => b.score - a.score);
       return emotions;
     }
@@ -55,21 +50,16 @@ async function analyzeSentimentHF(text) {
   }
 }
 
-// Calculate lead score using ONLY HuggingFace AI model (1-10 scale)
-// Returns null if no transcript is available
+// Calculate lead score using HuggingFace AI model (1-10 scale)
 async function calculateLeadScore(call) {
-  // Only calculate score if transcript exists
   if (!call.transcript || call.transcript.trim().length === 0) {
-    return null; // No transcript = no score
+    return null;
   }
 
-  let score = 5; // Base score for calls with transcripts
-  
-  // Factor 1: HuggingFace AI sentiment analysis (PRIMARY - up to 5 points)
+  let score = 5;
   const emotions = await analyzeSentimentHF(call.transcript);
   
   if (emotions && emotions.length > 0) {
-    // Categorize emotions using go_emotions model (28 categories)
     const positiveEmotions = ['admiration', 'amusement', 'approval', 'caring', 'desire', 
                               'excitement', 'gratitude', 'joy', 'love', 'optimism', 
                               'pride', 'relief'];
@@ -77,82 +67,62 @@ async function calculateLeadScore(call) {
                               'disgust', 'embarrassment', 'fear', 'grief', 'nervousness', 
                               'remorse', 'sadness'];
     
-    // Get top 3 emotions from HuggingFace model
     const topEmotions = emotions.slice(0, 3);
     let sentimentScore = 0;
     
-    console.log(`🤖 HF Emotions for call: ${topEmotions.map(e => `${e.label}(${e.score.toFixed(2)})`).join(', ')}`);
-    
     for (const emotion of topEmotions) {
       if (positiveEmotions.includes(emotion.label)) {
-        sentimentScore += emotion.score * 2; // Weight positive emotions heavily
+        sentimentScore += emotion.score * 2;
       } else if (negativeEmotions.includes(emotion.label)) {
-        sentimentScore -= emotion.score * 1.5; // Penalize negative emotions
+        sentimentScore -= emotion.score * 1.5;
       }
     }
     
-    // Convert HF sentiment to score points (0-5 range based on AI analysis)
     if (sentimentScore > 0.8) {
-      score += 5; // Extremely positive
+      score += 5;
     } else if (sentimentScore > 0.4) {
-      score += 4; // Very positive
+      score += 4;
     } else if (sentimentScore > 0.1) {
-      score += 3; // Positive
+      score += 3;
     } else if (sentimentScore > -0.1) {
-      score += 2; // Neutral
+      score += 2;
     } else if (sentimentScore > -0.4) {
-      score += 1; // Slightly negative
+      score += 1;
     } else if (sentimentScore > -0.8) {
-      score -= 1; // Negative
+      score -= 1;
     } else {
-      score -= 2; // Very negative
+      score -= 2;
     }
   } else {
-    // HF model failed, use basic heuristics
-    console.log('⚠️  HF model unavailable, using basic scoring');
-    
-    // Factor 2: Call success (0-2 points)
     if (call.call_analysis?.call_successful === true) {
       score += 2;
     }
-    
-    // Factor 3: Call duration (0-2 points)
     if (call.duration_ms) {
       const durationSeconds = call.duration_ms / 1000;
-      if (durationSeconds > 120) { // Over 2 minutes
+      if (durationSeconds > 120) {
         score += 2;
-      } else if (durationSeconds > 60) { // Over 1 minute
+      } else if (durationSeconds > 60) {
         score += 1;
       }
     }
   }
   
-  // Factor 4: Transcript engagement analysis (0-1 points)
   const wordCount = call.transcript.split(/\s+/).length;
-  if (wordCount > 200) { // Long, engaged conversation
+  if (wordCount > 200) {
     score += 1;
-  } else if (wordCount < 20) { // Very short conversation - likely poor lead
+  } else if (wordCount < 20) {
     score -= 1;
   }
   
-  // Ensure score is between 1 and 10, round to whole number
   score = Math.max(1, Math.min(10, Math.round(score)));
-  
-  console.log(`📊 Lead Score: ${score}/10`);
-  
   return score;
 }
 
-// Vercel serverless function
 export default async function handler(req, res) {
-  // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -165,19 +135,33 @@ export default async function handler(req, res) {
 
   try {
     const { limit = 10 } = req.body;
+    const RETELL_API_KEY = process.env.RETELL_API_KEY;
     
-    // Initialize Retell client
-    const retellClient = new Retell({
-      apiKey: process.env.RETELL_API_KEY
+    if (!RETELL_API_KEY) {
+      throw new Error('RETELL_API_KEY not configured');
+    }
+
+    console.log(`📞 Fetching ${limit} recent calls from Retell AI...`);
+    
+    // Use Retell REST API directly
+    const response = await fetch('https://api.retellai.com/v2/list-calls', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RETELL_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sort_order: 'descending',
+        limit: limit
+      })
     });
 
-    console.log(`📞 Fetching ${limit} recent calls from Retell AI using SDK...`);
-    
-    // Use Retell SDK to list calls
-    const callResponses = await retellClient.call.list({
-      sort_order: 'descending',
-      limit: limit
-    });
+    if (!response.ok) {
+      throw new Error(`Retell API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const callResponses = data.calls || [];
 
     console.log(`✅ Retrieved ${callResponses.length} calls from Retell AI`);
 
@@ -199,7 +183,7 @@ export default async function handler(req, res) {
       disconnection_reason: call.disconnection_reason,
       call_analysis: call.call_analysis,
       public_log_url: call.public_log_url,
-      lead_score: await calculateLeadScore(call) // AI-powered lead scoring
+      lead_score: await calculateLeadScore(call)
     })));
 
     console.log(`✅ Transformed ${transformedCalls.length} calls`);
@@ -210,7 +194,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching calls from Retell AI:', error);
+    console.error('❌ Error:', error);
     res.status(500).json({
       success: false,
       error: error.message
