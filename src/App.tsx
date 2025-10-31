@@ -13,6 +13,7 @@ import CreateManager from "./pages/CreateManager";
 import ManagerDetail from "./pages/ManagerDetail";
 import CreateProject from "./pages/CreateProject";
 import ProjectDetail from "./pages/ProjectDetail";
+import AgentDashboard from "./pages/AgentDashboard";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
         <Route path="/manager/:managerId" element={<ManagerDetail />} />
         <Route path="/manager/:managerId/create-project" element={<CreateProject />} />
         <Route path="/manager/:managerId/project/:projectId" element={<ProjectDetail />} />
+        <Route path="/agent-dashboard" element={<AgentDashboard />} />
       </Routes>
     </BrowserRouter>
   </QueryClientProvider>

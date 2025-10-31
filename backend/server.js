@@ -3,10 +3,17 @@ const nodemailer = require('nodemailer');
 const cors = require('cors');
 const { google } = require('googleapis');
 const googleAuth = require('./google-auth');
+const { Retell } = require('retell-sdk');
+const fetch = require('node-fetch');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Retell SDK client
+const retellClient = new Retell({
+  apiKey: 'key_7ae2ac651390bd59ee2c6cea4c40',
+});
 
 // API Hit Counter
 let apiHitCount = 0;
@@ -834,6 +841,25 @@ app.post('/api/retell/create-call', async (req, res) => {
 
     console.log('Call created successfully:', responseData.call_id);
 
+    // Save call record to dashboard with contact information
+    const contactName = metadata?.recipient_name || metadata?.name || 'Unknown';
+    const sheetName = metadata?.project_name || 'Voice Campaign';
+    
+    callRecords.push({
+      id: `call-${responseData.call_id}`,
+      name: contactName,
+      phone: toNumber,
+      status: 'ongoing',
+      duration: null,
+      timestamp: new Date().toISOString(),
+      sheetName: sheetName,
+      callId: responseData.call_id,
+      sentiment: null,
+      summary: null
+    });
+    
+    console.log('📞 Call record created for dashboard:', contactName, toNumber);
+
     res.json({
       success: true,
       message: 'Call created successfully',
@@ -949,6 +975,418 @@ app.get('/api/retell/calls', async (req, res) => {
   }
 });
 
+// In-memory storage for call records (replace with database in production)
+let callRecords = [];
+
+// Helper function to sync Google Sheets status to call records
+const syncSheetStatusToCallRecords = async (sheetData, sheetName) => {
+  if (!Array.isArray(sheetData) || sheetData.length === 0) return;
+  
+  console.log(`📊 Syncing ${sheetName}: ${sheetData.length} rows`);
+  
+  // Assuming first row is headers
+  const headers = sheetData[0];
+  const phoneIndex = headers.findIndex(h => h && (h.toLowerCase().includes('phone') || h.toLowerCase().includes('mobile') || h.toLowerCase().includes('number')));
+  const nameIndex = headers.findIndex(h => h && h.toLowerCase().includes('name'));
+  const statusIndex = headers.findIndex(h => h && (h.toLowerCase().includes('call') && h.toLowerCase().includes('status')));
+  
+  console.log(`📊 Found columns - Phone: ${phoneIndex}, Name: ${nameIndex}, Status: ${statusIndex}`);
+  
+  if (phoneIndex === -1) {
+    console.log('⚠️ No phone column found in sheet');
+    return;
+  }
+  
+  let syncedCount = 0;
+  
+  // Process each row (skip header)
+  for (let i = 1; i < sheetData.length; i++) {
+    const row = sheetData[i];
+    const phone = row[phoneIndex];
+    const name = nameIndex !== -1 ? row[nameIndex] : 'Unknown';
+    const status = statusIndex !== -1 ? row[statusIndex] : null;
+    
+    if (!phone) continue;
+    
+    // If status is "Completed", update or create call record
+    if (status && status.toLowerCase() === 'completed') {
+      const existingIndex = callRecords.findIndex(r => 
+        r.phone === phone || 
+        r.phone.replace(/\D/g, '').endsWith(phone.replace(/\D/g, '')) ||
+        phone.replace(/\D/g, '').endsWith(r.phone.replace(/\D/g, ''))
+      );
+      
+      if (existingIndex >= 0) {
+        // Update existing record
+        callRecords[existingIndex].status = 'completed';
+        callRecords[existingIndex].name = name;
+        callRecords[existingIndex].sheetName = sheetName;
+        console.log(`✅ Updated: ${name} (${phone}) - ${status}`);
+      } else {
+        // Create new record
+        callRecords.push({
+          id: `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: name,
+          phone: phone,
+          status: 'completed',
+          duration: null,
+          timestamp: new Date().toISOString(),
+          sheetName: sheetName,
+          callId: null,
+          sentiment: null,
+          summary: null
+        });
+        console.log(`📞 Created: ${name} (${phone}) - ${status}`);
+      }
+      syncedCount++;
+    }
+  }
+  
+  console.log(`📊 Sync complete: ${syncedCount} records updated/created`);
+};
+
+// API endpoint to sync Google Sheets data
+app.post('/api/sync-sheet-status', async (req, res) => {
+  try {
+    const { sheetData, sheetName } = req.body;
+    
+    console.log('📥 Received sync request for:', sheetName);
+    console.log('📥 Data length:', sheetData?.length);
+    
+    if (!sheetData || !Array.isArray(sheetData)) {
+      console.log('❌ Invalid sheet data');
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid sheet data'
+      });
+    }
+    
+    if (sheetData.length > 0) {
+      console.log('📥 Headers:', sheetData[0]);
+      console.log('📥 Sample row:', sheetData[1]);
+    }
+    
+    await syncSheetStatusToCallRecords(sheetData, sheetName || 'Training');
+    
+    console.log('✅ Total call records now:', callRecords.length);
+    
+    res.json({
+      success: true,
+      message: 'Sheet status synced to call records',
+      totalRecords: callRecords.length
+    });
+  } catch (error) {
+    console.error('Error syncing sheet status:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// API endpoint to get call records
+app.get('/api/call-records', (req, res) => {
+  res.json({
+    success: true,
+    records: callRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+  });
+});
+
+// API endpoint to add a call record (called from voice campaign or webhook)
+app.post('/api/call-records', (req, res) => {
+  try {
+    const { name, phone, status, duration, sheetName, callId, sentiment, summary } = req.body;
+    
+    const record = {
+      id: `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: name || 'Unknown',
+      phone: phone || 'N/A',
+      status: status || 'completed',
+      duration: duration || null,
+      timestamp: new Date().toISOString(),
+      sheetName: sheetName || 'Unknown Source',
+      callId: callId || null,
+      sentiment: sentiment || null,
+      summary: summary || null
+    };
+    
+    callRecords.push(record);
+    
+    // Keep only last 1000 records to prevent memory issues
+    if (callRecords.length > 1000) {
+      callRecords = callRecords.slice(-1000);
+    }
+    
+    console.log('📞 New call record added:', record.name, record.phone, record.status);
+    
+    res.json({
+      success: true,
+      record
+    });
+  } catch (error) {
+    console.error('Error adding call record:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// API endpoint to update call record status
+app.patch('/api/call-records/status', (req, res) => {
+  try {
+    const { phone, status, name, sheetName } = req.body;
+    
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number is required'
+      });
+    }
+    
+    // Find the most recent call record for this phone number
+    const recordIndex = callRecords.findIndex(r => r.phone === phone || r.phone.includes(phone) || phone.includes(r.phone));
+    
+    if (recordIndex >= 0) {
+      // Update existing record
+      callRecords[recordIndex].status = status || callRecords[recordIndex].status;
+      if (name) callRecords[recordIndex].name = name;
+      if (sheetName) callRecords[recordIndex].sheetName = sheetName;
+      
+      console.log('📞 Updated call status:', callRecords[recordIndex].name, phone, 'to', status);
+      
+      res.json({
+        success: true,
+        record: callRecords[recordIndex]
+      });
+    } else {
+      // Create new record if not found
+      const newRecord = {
+        id: `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: name || 'Unknown',
+        phone: phone,
+        status: status || 'completed',
+        duration: null,
+        timestamp: new Date().toISOString(),
+        sheetName: sheetName || 'Unknown Source',
+        callId: null,
+        sentiment: null,
+        summary: null
+      };
+      
+      callRecords.push(newRecord);
+      console.log('📞 Created new call record:', newRecord.name, phone, status);
+      
+      res.json({
+        success: true,
+        record: newRecord
+      });
+    }
+  } catch (error) {
+    console.error('Error updating call status:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Hugging Face API configuration
+const HF_API_URL = 'https://api-inference.huggingface.co/models/SamLowe/roberta-base-go_emotions';
+// Note: Hugging Face Inference API works without authentication but has rate limits
+// For production, get a free API key at https://huggingface.co/settings/tokens and add to .env
+const HF_API_KEY = process.env.HUGGINGFACE_API_KEY;
+
+// Analyze sentiment using Hugging Face RoBERTa model
+async function analyzeSentimentHF(text) {
+  if (!text || text.trim().length === 0) {
+    return null;
+  }
+
+  try {
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    
+    // Add authorization if API key is available
+    if (HF_API_KEY) {
+      headers['Authorization'] = `Bearer ${HF_API_KEY}`;
+    }
+
+    const response = await fetch(HF_API_URL, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        inputs: text.substring(0, 512) // Limit to 512 characters for RoBERTa
+      })
+    });
+
+    if (!response.ok) {
+      console.error('HF API error:', response.status, response.statusText);
+      return null;
+    }
+
+    const result = await response.json();
+    
+    // Handle model loading state (HF Inference API may need time to load model)
+    if (result.error && result.error.includes('loading')) {
+      console.log('HuggingFace model is loading, will retry on next call...');
+      return null;
+    }
+    
+    // Result is array of arrays with label-score pairs
+    if (Array.isArray(result) && result[0]) {
+      // Sort by score to get top emotions
+      const emotions = result[0].sort((a, b) => b.score - a.score);
+      return emotions;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error calling Hugging Face API:', error.message);
+    return null;
+  }
+}
+
+// Calculate lead score using ONLY HuggingFace AI model (1-10 scale)
+// Returns null if no transcript is available
+async function calculateLeadScore(call) {
+  // Only calculate score if transcript exists
+  if (!call.transcript || call.transcript.trim().length === 0) {
+    return null; // No transcript = no score
+  }
+
+  let score = 5; // Base score for calls with transcripts
+  
+  // Factor 1: HuggingFace AI sentiment analysis (PRIMARY - up to 5 points)
+  const emotions = await analyzeSentimentHF(call.transcript);
+  
+  if (emotions && emotions.length > 0) {
+    // Categorize emotions using go_emotions model (28 categories)
+    const positiveEmotions = ['admiration', 'amusement', 'approval', 'caring', 'desire', 
+                              'excitement', 'gratitude', 'joy', 'love', 'optimism', 
+                              'pride', 'relief'];
+    const negativeEmotions = ['anger', 'annoyance', 'disappointment', 'disapproval', 
+                              'disgust', 'embarrassment', 'fear', 'grief', 'nervousness', 
+                              'remorse', 'sadness'];
+    
+    // Get top 3 emotions from HuggingFace model
+    const topEmotions = emotions.slice(0, 3);
+    let sentimentScore = 0;
+    
+    console.log(`🤖 HF Emotions for call: ${topEmotions.map(e => `${e.label}(${e.score.toFixed(2)})`).join(', ')}`);
+    
+    for (const emotion of topEmotions) {
+      if (positiveEmotions.includes(emotion.label)) {
+        sentimentScore += emotion.score * 2; // Weight positive emotions heavily
+      } else if (negativeEmotions.includes(emotion.label)) {
+        sentimentScore -= emotion.score * 1.5; // Penalize negative emotions
+      }
+    }
+    
+    // Convert HF sentiment to score points (0-5 range based on AI analysis)
+    if (sentimentScore > 0.8) {
+      score += 5; // Extremely positive
+    } else if (sentimentScore > 0.4) {
+      score += 4; // Very positive
+    } else if (sentimentScore > 0.1) {
+      score += 3; // Positive
+    } else if (sentimentScore > -0.1) {
+      score += 2; // Neutral
+    } else if (sentimentScore > -0.4) {
+      score += 1; // Slightly negative
+    } else if (sentimentScore > -0.8) {
+      score -= 1; // Negative
+    } else {
+      score -= 2; // Very negative
+    }
+  } else {
+    // HF model failed, use basic heuristics
+    console.log('⚠️  HF model unavailable, using basic scoring');
+    
+    // Factor 2: Call success (0-2 points)
+    if (call.call_analysis?.call_successful === true) {
+      score += 2;
+    }
+    
+    // Factor 3: Call duration (0-2 points)
+    if (call.duration_ms) {
+      const durationSeconds = call.duration_ms / 1000;
+      if (durationSeconds > 120) { // Over 2 minutes
+        score += 2;
+      } else if (durationSeconds > 60) { // Over 1 minute
+        score += 1;
+      }
+    }
+  }
+  
+  // Factor 4: Transcript engagement analysis (0-1 points)
+  const wordCount = call.transcript.split(/\s+/).length;
+  if (wordCount > 200) { // Long, engaged conversation
+    score += 1;
+  } else if (wordCount < 20) { // Very short conversation - likely poor lead
+    score -= 1;
+  }
+  
+  // Ensure score is between 1 and 10, round to whole number
+  score = Math.max(1, Math.min(10, Math.round(score)));
+  
+  console.log(`📊 Lead Score: ${score}/10`);
+  
+  return score;
+}
+
+// Fetch recent calls from Retell AI API using SDK
+app.post('/api/retell/list-calls', async (req, res) => {
+  try {
+    const { limit = 1000 } = req.body;
+    
+    console.log(`📞 Fetching ${limit} recent calls from Retell AI using SDK...`);
+    
+    // Use Retell SDK to list calls
+    const callResponses = await retellClient.call.list({
+      sort_order: 'descending',
+      limit: limit
+    });
+    
+    console.log(`✅ Retrieved ${callResponses.length || 0} calls from Retell AI`);
+    
+    // Transform the calls to include all necessary fields with async lead scoring
+    const transformedCalls = await Promise.all(callResponses.map(async (call) => ({
+      call_id: call.call_id,
+      call_type: call.call_type,
+      call_status: call.call_status,
+      start_timestamp: call.start_timestamp,
+      end_timestamp: call.end_timestamp,
+      duration_ms: call.duration_ms,
+      from_number: call.from_number,
+      to_number: call.to_number,
+      disconnection_reason: call.disconnection_reason,
+      call_analysis: call.call_analysis,
+      transcript: call.transcript,
+      recording_url: call.recording_url,
+      public_log_url: call.public_log_url,
+      agent_id: call.agent_id,
+      metadata: call.metadata,
+      lead_score: await calculateLeadScore(call)
+    })));
+    
+    console.log(`✅ Transformed ${transformedCalls.length} calls`);
+    
+    res.json({
+      success: true,
+      calls: transformedCalls,
+      total: transformedCalls.length
+    });
+  } catch (error) {
+    console.error('Error fetching Retell calls:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 // Retell AI webhook endpoint (for call events)
 app.post('/api/retell/webhook', async (req, res) => {
   try {
@@ -957,26 +1395,90 @@ app.post('/api/retell/webhook', async (req, res) => {
     console.log('Retell webhook received:', event.event);
     console.log('Call ID:', event.call?.call_id);
     console.log('Call Status:', event.call?.call_status);
+    console.log('Metadata:', event.call?.metadata);
+
+    // Extract contact info from metadata
+    const contactName = event.call?.metadata?.recipient_name || 
+                       event.call?.metadata?.name || 
+                       event.call?.to_number || 
+                       'Unknown';
+    const sheetName = event.call?.metadata?.project_name || 'Voice Campaign';
 
     // Handle different event types
     switch (event.event) {
       case 'call_started':
         console.log('Call started:', event.call.call_id);
-        // You can update your database or send notifications here
+        console.log('Contact:', contactName);
+        
+        // Check if record already exists (from create-call)
+        const startedIndex = callRecords.findIndex(r => r.callId === event.call.call_id);
+        if (startedIndex >= 0) {
+          // Update existing record with more info
+          callRecords[startedIndex].name = contactName;
+          callRecords[startedIndex].sheetName = sheetName;
+          console.log('📞 Updated existing call record:', contactName);
+        } else {
+          // Create new record if not exists
+          callRecords.push({
+            id: `call-${event.call.call_id}`,
+            name: contactName,
+            phone: event.call.to_number || 'N/A',
+            status: 'ongoing',
+            duration: null,
+            timestamp: new Date().toISOString(),
+            sheetName: sheetName,
+            callId: event.call.call_id,
+            sentiment: null,
+            summary: null
+          });
+          console.log('📞 Created new call record:', contactName);
+        }
         break;
       
       case 'call_ended':
         console.log('Call ended:', event.call.call_id);
         console.log('Duration:', event.call.duration_ms, 'ms');
         console.log('Disconnection reason:', event.call.disconnection_reason);
-        // Store call transcript, update status, etc.
+        
+        // Update existing record or create new one
+        const existingIndex = callRecords.findIndex(r => r.callId === event.call.call_id);
+        const durationSeconds = Math.round((event.call.duration_ms || 0) / 1000);
+        const status = event.call.call_status === 'ended' ? 'completed' : 'failed';
+        
+        if (existingIndex >= 0) {
+          callRecords[existingIndex].status = status;
+          callRecords[existingIndex].duration = `${durationSeconds}s`;
+          callRecords[existingIndex].name = contactName; // Update with metadata name
+          callRecords[existingIndex].sheetName = sheetName;
+          console.log('📞 Updated call to', status, ':', contactName);
+        } else {
+          callRecords.push({
+            id: `call-${event.call.call_id}`,
+            name: contactName,
+            phone: event.call.to_number || 'N/A',
+            status: status,
+            duration: `${durationSeconds}s`,
+            timestamp: new Date().toISOString(),
+            sheetName: sheetName,
+            callId: event.call.call_id,
+            sentiment: null,
+            summary: null
+          });
+          console.log('📞 Created call record on end:', contactName);
+        }
         break;
       
       case 'call_analyzed':
         console.log('Call analyzed:', event.call.call_id);
         console.log('Summary:', event.call.call_analysis?.call_summary);
         console.log('Sentiment:', event.call.call_analysis?.user_sentiment);
-        // Store analysis results
+        
+        // Update with analysis data
+        const analyzedIndex = callRecords.findIndex(r => r.callId === event.call.call_id);
+        if (analyzedIndex >= 0) {
+          callRecords[analyzedIndex].sentiment = event.call.call_analysis?.user_sentiment || null;
+          callRecords[analyzedIndex].summary = event.call.call_analysis?.call_summary || null;
+        }
         break;
       
       default:
