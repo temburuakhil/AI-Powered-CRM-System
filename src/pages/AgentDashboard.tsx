@@ -50,7 +50,8 @@ export default function AgentDashboard() {
     try {
       console.log('📞 Fetching calls from Retell AI...');
       
-      const response = await fetch('http://localhost:3001/api/retell/list-calls', {
+      // Use relative path for Vercel serverless function
+      const response = await fetch('/api/retell/list-calls', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,7 +66,7 @@ export default function AgentDashboard() {
       }
       
       const result = await response.json();
-      console.log('✅ Retell calls received:', result.total);
+      console.log('✅ Retell calls received:', result.calls?.length || 0);
       
       if (result.success && result.calls) {
         setCalls(result.calls);
