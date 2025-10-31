@@ -1,4 +1,4 @@
-const Retell = require('retell-sdk').Retell;
+import { Retell } from 'retell-sdk';
 
 // HuggingFace API configuration
 const HF_API_URL = 'https://api-inference.huggingface.co/models/SamLowe/roberta-base-go_emotions';
@@ -144,7 +144,7 @@ async function calculateLeadScore(call) {
 }
 
 // Vercel serverless function
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -216,4 +216,4 @@ module.exports = async (req, res) => {
       error: error.message
     });
   }
-};
+}
