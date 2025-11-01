@@ -56,7 +56,7 @@ export default function AgentDashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          limit: 10
+          limit: 20
         })
       });
       

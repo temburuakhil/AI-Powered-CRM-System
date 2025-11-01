@@ -157,13 +157,13 @@ const Sidebar: React.FC<SidebarProps> = ({ customManagers, onDeleteManager, isCo
         </button>
 
         <button
-          onClick={() => navigate("/agent-dashboard")}
+          onClick={() => window.open('/agent-dashboard', '_blank')}
           className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
             isActive('/agent-dashboard')
               ? 'text-[#e6edf3] bg-[#1c2128] font-medium' 
               : 'text-[#7d8590] hover:bg-[#1c2128] hover:text-[#e6edf3]'
           }`}
-          title="Agent Dashboard"
+          title="Agent Dashboard (Opens in new tab)"
         >
           <Phone className="w-4 h-4 flex-shrink-0" />
           {!isCollapsed && <span>Agent Dashboard</span>}
