@@ -11,12 +11,14 @@ import {
   Bell,
   ChevronRight,
   Folder,
-  GitBranch
+  GitBranch,
+  LogOut
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import Papa from "papaparse";
 import Sidebar from "@/components/layout/Sidebar";
 import SearchBar from "@/components/SearchBar";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +45,7 @@ const TRAINING_SHEET2_GID = "394964549"; // Course Completion
 
 const AdminPortal = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   // Initialize from localStorage to avoid showing 0 initially
   const [apiHitCount, setApiHitCount] = useState(() => {
     return parseInt(localStorage.getItem("apiHitCount") || "0");
@@ -51,6 +54,29 @@ const AdminPortal = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [managerToDelete, setManagerToDelete] = useState<string | null>(null);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:3001/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      localStorage.removeItem('user');
+      toast({
+        title: "Logged Out",
+        description: "You have been logged out successfully",
+      });
+      navigate('/landing');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to logout",
+        variant: "destructive",
+      });
+    }
+  };
 
   const countCompletedStatuses = useCallback(async () => {
     try {
@@ -222,6 +248,14 @@ const AdminPortal = () => {
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center text-xs font-semibold">
               AD
             </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-[#e6edf3] bg-[#0d1117] border border-[#30363d] rounded-md hover:border-[#58a6ff] hover:bg-[#1c2128] transition-colors"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
           </div>
         </header>
 

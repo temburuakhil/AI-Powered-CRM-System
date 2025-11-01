@@ -12,6 +12,9 @@ const CreateManager = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [managerName, setManagerName] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [customManagers, setCustomManagers] = useState<Array<{id: string; name: string; projects: any[]}>>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -31,7 +34,8 @@ const CreateManager = () => {
     localStorage.setItem("customManagers", JSON.stringify(updated));
   };
 
-  const handleCreateManager = () => {
+  const handleCreateManager = async () => {
+    // Validation
     if (!managerName.trim()) {
       toast({
         title: "Error",
@@ -41,32 +45,111 @@ const CreateManager = () => {
       return;
     }
 
+    if (!username.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a username",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!email.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter an email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!password.trim() || password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCreating(true);
 
-    // Get existing managers from localStorage
-    const existingManagers = JSON.parse(localStorage.getItem("customManagers") || "[]");
+    try {
+      // Create manager in database via backend API
+      const response = await fetch('http://localhost:3001/api/auth/create-manager', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          username: username.trim(),
+          email: email.trim(),
+          password: password,
+          fullName: managerName.trim(),
+        }),
+      });
 
-    // Create new manager object
-    const newManager = {
-      id: Date.now().toString(),
-      name: managerName.trim(),
-      createdAt: new Date().toISOString(),
-      projects: [],
-    };
+      const data = await response.json();
 
-    // Add to managers list
-    const updatedManagers = [...existingManagers, newManager];
-    localStorage.setItem("customManagers", JSON.stringify(updatedManagers));
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to create manager');
+      }
 
-    toast({
-      title: "Success!",
-      description: `${managerName} manager created successfully`,
-    });
+      // Send credentials email via backend
+      try {
+        await fetch('http://localhost:3001/api/send-manager-credentials', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email.trim(),
+            fullName: managerName.trim(),
+            username: username.trim(),
+            password: password,
+          }),
+        });
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError);
+        // Don't fail the whole operation if email fails
+      }
 
-    setTimeout(() => {
+      // Get existing managers from localStorage
+      const existingManagers = JSON.parse(localStorage.getItem("customManagers") || "[]");
+
+      // Create new manager object for localStorage
+      const newManager = {
+        id: data.manager.id || Date.now().toString(),
+        name: managerName.trim(),
+        username: username.trim(),
+        email: email.trim(),
+        createdAt: new Date().toISOString(),
+        projects: [],
+      };
+
+      // Add to managers list
+      const updatedManagers = [...existingManagers, newManager];
+      localStorage.setItem("customManagers", JSON.stringify(updatedManagers));
+
+      toast({
+        title: "Success!",
+        description: `${managerName} manager created successfully. Credentials sent to ${email}`,
+      });
+
+      setTimeout(() => {
+        setIsCreating(false);
+        navigate("/");
+      }, 1500);
+    } catch (error) {
+      console.error('Create manager error:', error);
       setIsCreating(false);
-      navigate("/");
-    }, 1000);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create manager",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -135,6 +218,57 @@ const CreateManager = () => {
                   This will appear as a card in your admin portal
                 </p>
               </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#e6edf3] mb-2">
+                  Username
+                </label>
+                <Input
+                  type="text"
+                  placeholder="e.g., manager_healthcare"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="text-lg py-6 bg-[#0d1117] border border-[#30363d] text-[#e6edf3] placeholder-[#7d8590] focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]"
+                  disabled={isCreating}
+                />
+                <p className="text-xs text-[#7d8590] mt-2">
+                  Used for login authentication
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#e6edf3] mb-2">
+                  Email Address
+                </label>
+                <Input
+                  type="email"
+                  placeholder="manager@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="text-lg py-6 bg-[#0d1117] border border-[#30363d] text-[#e6edf3] placeholder-[#7d8590] focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]"
+                  disabled={isCreating}
+                />
+                <p className="text-xs text-[#7d8590] mt-2">
+                  Credentials will be sent to this email
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#e6edf3] mb-2">
+                  Password
+                </label>
+                <Input
+                  type="password"
+                  placeholder="Minimum 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="text-lg py-6 bg-[#0d1117] border border-[#30363d] text-[#e6edf3] placeholder-[#7d8590] focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]"
+                  disabled={isCreating}
+                />
+                <p className="text-xs text-[#7d8590] mt-2">
+                  Must be at least 6 characters long
+                </p>
+              </div>
             </div>
 
             {/* Preview */}
@@ -169,18 +303,18 @@ const CreateManager = () => {
             <div className="flex items-center gap-4 pt-6">
               <Button
                 onClick={handleCreateManager}
-                disabled={!managerName.trim() || isCreating}
+                disabled={!managerName.trim() || !username.trim() || !email.trim() || !password.trim() || isCreating}
                 className="flex-1 py-6 text-lg bg-[#238636] hover:bg-[#2ea043] text-white shadow-lg"
               >
                 {isCreating ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Creating...
+                    Creating & Sending Email...
                   </>
                 ) : (
                   <>
                     <Plus className="w-5 h-5 mr-2" />
-                    Create Manager Profile
+                    Create Manager & Send Credentials
                   </>
                 )}
               </Button>

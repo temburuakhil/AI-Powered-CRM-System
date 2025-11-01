@@ -1,6 +1,10 @@
 const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+const mongoose = require('mongoose');
+const passport = require('./config/passport');
 const { google } = require('googleapis');
 const googleAuth = require('./google-auth');
 const { Retell } = require('retell-sdk');
@@ -9,6 +13,13 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/bput-hackathon';
+
+mongoose.connect(MONGODB_URI)
+.then(() => console.log('✅ MongoDB Connected'))
+.catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // Retell SDK client
 const retellClient = new Retell({
@@ -27,9 +38,32 @@ if (calendarEnabled) {
 }
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:8081',
+  credentials: true
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'bput-hackathon-secret-key-2025',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: MONGODB_URI,
+    touchAfter: 24 * 3600 // lazy session update (24 hours)
+  }),
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production'
+  }
+}));
+
+// Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
 
 // API Hit Counter Middleware
 app.use((req, res, next) => {
@@ -38,6 +72,10 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// Auth routes
+const { router: authRouter } = require('./routes/auth');
+app.use('/api/auth', authRouter);
 
 // Get API hit count endpoint
 app.get('/api/hit-count', (req, res) => {
@@ -129,6 +167,191 @@ app.post('/api/send-email', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: error.message || 'Failed to send email',
+      error: error.toString()
+    });
+  }
+});
+
+// Send manager credentials email endpoint
+app.post('/api/send-manager-credentials', async (req, res) => {
+  try {
+    const { email, fullName, username, password } = req.body;
+
+    // Validate required fields
+    if (!email || !fullName || !username || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields' 
+      });
+    }
+
+    // Get SMTP config from environment variables
+    const smtpConfig = {
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      user: process.env.SMTP_USER,
+      password: process.env.SMTP_PASSWORD ? process.env.SMTP_PASSWORD.replace(/\s+/g, '') : null,
+    };
+
+    if (!smtpConfig.user || !smtpConfig.password) {
+      console.error('SMTP credentials not configured in environment variables');
+      console.error('SMTP_USER:', smtpConfig.user ? 'Set' : 'Missing');
+      console.error('SMTP_PASSWORD:', smtpConfig.password ? 'Set' : 'Missing');
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Email service not configured. Please contact administrator.' 
+      });
+    }
+
+    console.log('SMTP Configuration:', {
+      host: smtpConfig.host,
+      port: smtpConfig.port,
+      user: smtpConfig.user,
+      passwordLength: smtpConfig.password.length
+    });
+
+    // Create transporter with SMTP config
+    const transporter = nodemailer.createTransport({
+      host: smtpConfig.host,
+      port: smtpConfig.port,
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: smtpConfig.user,
+        pass: smtpConfig.password,
+      },
+      tls: {
+        rejectUnauthorized: false
+      },
+      debug: true, // Enable debug output
+      logger: true // Log to console
+    });
+
+    // Verify transporter configuration
+    try {
+      await transporter.verify();
+      console.log('✅ SMTP connection verified successfully');
+    } catch (verifyError) {
+      console.error('❌ SMTP verification failed:', verifyError);
+      throw new Error('SMTP connection failed: ' + verifyError.message);
+    }
+
+    // Prepare email content
+    const mailOptions = {
+      from: `"CRM Admin" <${smtpConfig.user}>`,
+      to: email,
+      subject: '🔐 Your Manager Account Credentials - CRM Portal',
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; border-radius: 10px;">
+          <div style="background: white; border-radius: 8px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 40px;">🔐</span>
+              </div>
+              <h1 style="color: #333; margin: 0; font-size: 28px; font-weight: 600;">Welcome to CRM Portal!</h1>
+            </div>
+            
+            <div style="background: #f8f9fa; border-left: 4px solid #667eea; padding: 20px; margin: 30px 0; border-radius: 4px;">
+              <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">Hello <strong style="color: #333;">${fullName}</strong>,</p>
+              <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">Your manager account has been created successfully. Below are your login credentials for the CRM system.</p>
+            </div>
+
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 8px; margin: 30px 0;">
+              <h2 style="color: white; margin: 0 0 20px 0; font-size: 18px; text-align: center;">Your Login Credentials</h2>
+              
+              <div style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 6px; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 20px; margin-right: 10px;">👤</span>
+                  <strong style="color: #555; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Username</strong>
+                </div>
+                <div style="background: white; padding: 12px 15px; border-radius: 4px; border: 2px solid #667eea;">
+                  <code style="font-family: 'Courier New', monospace; font-size: 16px; color: #333; font-weight: 600;">${username}</code>
+                </div>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.95); padding: 20px; border-radius: 6px;">
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 20px; margin-right: 10px;">🔑</span>
+                  <strong style="color: #555; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Password</strong>
+                </div>
+                <div style="background: white; padding: 12px 15px; border-radius: 4px; border: 2px solid #764ba2;">
+                  <code style="font-family: 'Courier New', monospace; font-size: 16px; color: #333; font-weight: 600;">${password}</code>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 25px 0; border-radius: 4px;">
+              <p style="margin: 0; color: #856404; font-size: 13px; line-height: 1.6;">
+                <strong>⚠️ Security Notice:</strong> Please keep these credentials secure and do not share them with anyone. We recommend changing your password after your first login.
+              </p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="http://localhost:8081/landing" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                Login to Your Account →
+              </a>
+            </div>
+
+            <div style="border-top: 1px solid #e0e0e0; padding-top: 25px; margin-top: 30px;">
+              <h3 style="color: #333; font-size: 16px; margin: 0 0 15px 0;">📋 Quick Start Guide:</h3>
+              <ol style="color: #666; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
+                <li>Visit the login page using the button above</li>
+                <li>Select the <strong>Manager</strong> tab</li>
+                <li>Enter your username and password</li>
+                <li>Access your department's dashboard</li>
+              </ol>
+            </div>
+
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                This is an automated email from CRM Portal.<br>
+                If you did not request this account, please contact your administrator immediately.
+              </p>
+            </div>
+          </div>
+        </div>
+      `,
+      text: `
+Welcome to CRM Portal!
+
+Hello ${fullName},
+
+Your manager account has been created successfully. Below are your login credentials:
+
+Username: ${username}
+Password: ${password}
+
+Login URL: http://localhost:8081/landing
+
+Quick Start:
+1. Visit the login page
+2. Select the Manager tab
+3. Enter your credentials
+4. Access your department's dashboard
+
+Security Notice: Please keep these credentials secure and change your password after first login.
+
+---
+This is an automated email from CRM Portal.
+      `
+    };
+
+    // Send email
+    const info = await transporter.sendMail(mailOptions);
+    
+    console.log('Manager credentials email sent successfully:', info.messageId);
+    console.log('Sent to:', email);
+
+    res.json({ 
+      success: true, 
+      message: 'Credentials email sent successfully',
+      messageId: info.messageId 
+    });
+
+  } catch (error) {
+    console.error('Error sending manager credentials email:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || 'Failed to send credentials email',
       error: error.toString()
     });
   }

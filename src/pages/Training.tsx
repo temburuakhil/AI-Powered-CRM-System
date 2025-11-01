@@ -6,7 +6,7 @@ import { LeadCounter } from "@/components/LeadCounter";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare, Bell, BookOpen, FileText, MessageSquareText } from "lucide-react";
+import { AlertCircle, Mail, Phone, MessageCircle, MessageSquare, Bell, BookOpen, MessageSquareText, LogOut } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import SearchBar from "@/components/SearchBar";
 
@@ -30,6 +30,58 @@ const Training = () => {
   const [smsLoading, setSmsLoading] = useState(false);
   const [whatsappFeedbackLoading, setWhatsappFeedbackLoading] = useState(false);
   const [emailFeedbackLoading, setEmailFeedbackLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isManager, setIsManager] = useState(false);
+
+  // Check authentication and role
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/me', {
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setCurrentUser(data.user);
+        setIsManager(data.user.role === 'manager');
+        
+        // If manager, check if they have access to this page
+        if (data.user.role === 'manager' && data.user.department !== 'training') {
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to access this page",
+            variant: "destructive",
+          });
+          navigate('/landing');
+        }
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:3001/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      localStorage.removeItem('user');
+      toast({
+        title: "Logged Out",
+        description: "You have been logged out successfully",
+      });
+      navigate('/landing');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   const sendEmailCampaign = async () => {
     setEmailLoading(true);
@@ -330,17 +382,30 @@ const Training = () => {
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex">
-      <Sidebar 
-        customManagers={customManagers} 
-        onDeleteManager={() => {}}
-        isCollapsed={isSidebarCollapsed}
-        onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-      />
-      <main className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+      {!isManager && (
+        <Sidebar 
+          customManagers={customManagers} 
+          onDeleteManager={() => {}}
+          isCollapsed={isSidebarCollapsed}
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        />
+      )}
+      <main className={`flex-1 transition-all duration-300 ${!isManager && (isSidebarCollapsed ? 'ml-16' : 'ml-64')}`}>
         {/* Top Bar */}
         <header className="h-16 border-b border-[#30363d] bg-[#010409] px-6 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-4 flex-1 max-w-2xl">
-            <SearchBar customManagers={JSON.parse(localStorage.getItem("customManagers") || "[]")} />
+            {!isManager && <SearchBar customManagers={JSON.parse(localStorage.getItem("customManagers") || "[]")} />}
+            {isManager && (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center">
+                  <BookOpen className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-base font-semibold">Training Manager</h1>
+                  <p className="text-xs text-[#7d8590]">{currentUser?.fullName}</p>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-6">
             <LeadCounter count={completedLeadsCount} />
@@ -348,9 +413,19 @@ const Training = () => {
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-[#1f6feb] rounded-full"></span>
             </button>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center text-xs font-semibold">
-              TR
-            </div>
+            {isManager ? (
+              <Button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-[#e6edf3] bg-[#0d1117] border border-[#30363d] rounded-md hover:border-[#58a6ff] hover:bg-[#1c2128] transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </Button>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] flex items-center justify-center text-xs font-semibold">
+                TR
+              </div>
+            )}
           </div>
         </header>
 
@@ -367,13 +442,6 @@ const Training = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate('/transcripts')}
-                className="group relative bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-2 hover:border-[#58a6ff] hover:bg-[#58a6ff]/5 transition-all duration-200 flex items-center gap-2"
-              >
-                <FileText className="h-4 w-4 text-[#58a6ff]" />
-                <span className="text-sm font-medium text-[#e6edf3] group-hover:text-[#58a6ff] transition-colors">Transcripts</span>
-              </button>
               <button
                 onClick={() => navigate('/feedback')}
                 className="group relative bg-[#0d1117] border border-[#30363d] rounded-lg px-4 py-2 hover:border-[#a371f7] hover:bg-[#a371f7]/5 transition-all duration-200 flex items-center gap-2"

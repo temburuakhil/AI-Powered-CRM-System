@@ -3,7 +3,7 @@ import Papa from "papaparse";
 import { DataTable } from "@/components/DataTable";
 import { SchemeCounter } from "@/components/SchemeCounter";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, ClipboardList, MessageSquare, MessageCircle, Phone, Mail, Bell, GraduationCap } from "lucide-react";
+import { AlertCircle, ClipboardList, MessageSquare, MessageCircle, Phone, Mail, Bell, GraduationCap, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
@@ -35,6 +35,58 @@ const Scholarships = () => {
   const navigate = useNavigate();
   const [customManagers, setCustomManagers] = useState<Array<{id: string; name: string; projects: any[]}>>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isManager, setIsManager] = useState(false);
+
+  // Check authentication and role
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/me', {
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setCurrentUser(data.user);
+        setIsManager(data.user.role === 'manager');
+        
+        // If manager, check if they have access to this page
+        if (data.user.role === 'manager' && data.user.department !== 'egovernance') {
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to access this page",
+            variant: "destructive",
+          });
+          navigate('/landing');
+        }
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:3001/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      localStorage.removeItem('user');
+      toast({
+        title: "Logged Out",
+        description: "You have been logged out successfully",
+      });
+      navigate('/landing');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   // Load custom managers from localStorage
   useEffect(() => {
@@ -318,17 +370,30 @@ const Scholarships = () => {
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex overflow-x-hidden">
-      <Sidebar 
-        customManagers={customManagers} 
-        onDeleteManager={handleDeleteManager}
-        isCollapsed={isSidebarCollapsed}
-        onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-      />
-      <main className={`flex-1 transition-all duration-300 overflow-x-hidden ${isSidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+      {!isManager && (
+        <Sidebar 
+          customManagers={customManagers} 
+          onDeleteManager={handleDeleteManager}
+          isCollapsed={isSidebarCollapsed}
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        />
+      )}
+      <main className={`flex-1 transition-all duration-300 overflow-x-hidden ${!isManager && (isSidebarCollapsed ? 'ml-16' : 'ml-64')}`}>
         {/* Top Bar */}
         <header className="h-16 border-b border-[#30363d] bg-[#010409] px-6 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-4 flex-1 max-w-2xl">
-            <SearchBar customManagers={customManagers} />
+            {!isManager && <SearchBar customManagers={customManagers} />}
+            {isManager && (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#a371f7] to-[#8957e5] flex items-center justify-center">
+                  <GraduationCap className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-base font-semibold">Scholarship Manager</h1>
+                  <p className="text-xs text-[#7d8590]">{currentUser?.fullName}</p>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-6">
             <SchemeCounter count={registrationCompletedCount} />
@@ -336,9 +401,19 @@ const Scholarships = () => {
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-[#1f6feb] rounded-full"></span>
             </button>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#a371f7] to-[#8957e5] flex items-center justify-center text-xs font-semibold">
-              SH
-            </div>
+            {isManager ? (
+              <Button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-[#e6edf3] bg-[#0d1117] border border-[#30363d] rounded-md hover:border-[#58a6ff] hover:bg-[#1c2128] transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </Button>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#a371f7] to-[#8957e5] flex items-center justify-center text-xs font-semibold">
+                SH
+              </div>
+            )}
           </div>
         </header>
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Plus, Briefcase, FolderOpen, Trash2, Bell, Folder } from "lucide-react";
+import { Plus, Briefcase, FolderOpen, Trash2, Bell, Folder, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import Sidebar from "@/components/layout/Sidebar";
 import SearchBar from "@/components/SearchBar";
 import {
@@ -38,6 +39,60 @@ const ManagerDetail = () => {
   const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
   const [customManagers, setCustomManagers] = useState<Array<{id: string; name: string; projects: any[]}>>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isManager, setIsManager] = useState(false);
+
+  // Check authentication
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/me', {
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setCurrentUser(data.user);
+        setIsManager(data.user.role === 'manager');
+        
+        // If manager, verify they're accessing their own page
+        if (data.user.role === 'manager' && data.user.id !== managerId) {
+          toast({
+            title: "Access Denied",
+            description: "You can only access your own manager page",
+            variant: "destructive",
+          });
+          navigate(`/manager/${data.user.id}`);
+        }
+      } else {
+        navigate('/landing');
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:3001/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      localStorage.removeItem('user');
+      toast({
+        title: "Logged Out",
+        description: "You have been logged out successfully",
+      });
+      navigate('/landing');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   useEffect(() => {
     // Load manager data from localStorage
@@ -101,17 +156,30 @@ const ManagerDetail = () => {
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] flex">
-      <Sidebar 
-        customManagers={customManagers} 
-        onDeleteManager={handleDeleteManager}
-        isCollapsed={isSidebarCollapsed}
-        onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-      />
-      <main className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+      {!isManager && (
+        <Sidebar 
+          customManagers={customManagers} 
+          onDeleteManager={handleDeleteManager}
+          isCollapsed={isSidebarCollapsed}
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        />
+      )}
+      <main className={`flex-1 transition-all duration-300 ${!isManager && (isSidebarCollapsed ? 'ml-16' : 'ml-64')}`}>
         {/* Top Bar */}
         <header className="h-16 border-b border-[#30363d] bg-[#010409] px-6 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-4 flex-1 max-w-2xl">
-            <SearchBar customManagers={customManagers} />
+            {!isManager && <SearchBar customManagers={customManagers} />}
+            {isManager && (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-md bg-gradient-to-br from-[#ffa657] to-[#ff8c00] flex items-center justify-center">
+                  <Briefcase className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-base font-semibold">{currentUser?.fullName || manager.name}</h1>
+                  <p className="text-xs text-[#7d8590]">@{currentUser?.username}</p>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#1c2128] border border-[#30363d]">
@@ -124,9 +192,19 @@ const ManagerDetail = () => {
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-[#1f6feb] rounded-full"></span>
             </button>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ffa657] to-[#ff8c00] flex items-center justify-center text-xs font-semibold">
-              {manager.name.substring(0, 2).toUpperCase()}
-            </div>
+            {isManager ? (
+              <Button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-[#e6edf3] bg-[#0d1117] border border-[#30363d] rounded-md hover:border-[#58a6ff] hover:bg-[#1c2128] transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </Button>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ffa657] to-[#ff8c00] flex items-center justify-center text-xs font-semibold">
+                {manager.name.substring(0, 2).toUpperCase()}
+              </div>
+            )}
           </div>
         </header>
 
