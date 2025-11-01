@@ -1,13 +1,11 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
-  BarChart3,
   FileText,
   Users,
   Plus,
   FolderKanban,
   Trash2,
-  Settings,
   ChevronRight,
   ChevronLeft,
   ChevronDown,
@@ -75,13 +73,6 @@ const Sidebar: React.FC<SidebarProps> = ({ customManagers, onDeleteManager, isCo
         >
           <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
           {!isCollapsed && <span className={isActive('/') ? 'font-medium' : ''}>Dashboard</span>}
-        </button>
-        <button 
-          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#7d8590] rounded-md hover:bg-[#1c2128] hover:text-[#e6edf3] transition-colors"
-          title="Analytics"
-        >
-          <BarChart3 className="w-4 h-4 flex-shrink-0" />
-          {!isCollapsed && <span>Analytics</span>}
         </button>
 
         {!isCollapsed && <div className="px-3 py-2 text-xs font-semibold text-[#7d8590] uppercase tracking-wider mt-4">Modules</div>}
@@ -215,17 +206,6 @@ const Sidebar: React.FC<SidebarProps> = ({ customManagers, onDeleteManager, isCo
           {!isCollapsed && <span>New Manager</span>}
         </button>
       </nav>
-
-      {/* Footer */}
-      <div className="p-3 border-t border-[#30363d]">
-        <button 
-          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[#7d8590] rounded-md hover:bg-[#1c2128] hover:text-[#e6edf3] transition-colors"
-          title="Settings"
-        >
-          <Settings className="w-4 h-4 flex-shrink-0" />
-          {!isCollapsed && <span>Settings</span>}
-        </button>
-      </div>
     </aside>
   );
 };
