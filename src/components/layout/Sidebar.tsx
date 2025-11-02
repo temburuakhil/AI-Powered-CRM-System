@@ -27,8 +27,8 @@ const Sidebar: React.FC<SidebarProps> = ({ customManagers, onDeleteManager, isCo
 
   // Helper function to check if route is active
   const isActive = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/';
+    if (path === '/admin') {
+      return location.pathname === '/admin' || location.pathname === '/';
     }
     return location.pathname.startsWith(path);
   };
