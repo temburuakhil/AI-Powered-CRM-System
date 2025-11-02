@@ -13,7 +13,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ customManagers = [] }) => {
 
   // Define searchable routes
   const routes = [
-    { name: "Dashboard", path: "/admin", keywords: ["home", "dashboard", "main"] },
+    { name: "Dashboard", path: "/admin", keywords: ["home", "dashboard", "main", "admin"] },
     { name: "E-Governance", path: "/e-governance", keywords: ["e-governance", "governance", "schemes", "scholarships"] },
     { name: "Training", path: "/training", keywords: ["training", "courses", "skill", "development"] },
     { name: "Schemes", path: "/schemes", keywords: ["schemes", "government"] },
