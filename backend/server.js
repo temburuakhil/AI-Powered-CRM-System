@@ -1559,6 +1559,74 @@ async function calculateLeadScore(call) {
   return score;
 }
 
+// Calculate basic lead score without AI (fast, synchronous)
+function calculateBasicLeadScore(call) {
+  // No transcript = no score
+  if (!call.transcript || call.transcript.trim().length === 0) {
+    return null;
+  }
+
+  let score = 5; // Base score
+
+  // Factor 1: Call success (0-2 points)
+  if (call.call_analysis?.call_successful === true) {
+    score += 2;
+  } else if (call.call_analysis?.call_successful === false) {
+    score -= 1;
+  }
+
+  // Factor 2: Call duration (0-3 points)
+  if (call.duration_ms) {
+    const durationSeconds = call.duration_ms / 1000;
+    if (durationSeconds > 180) { // Over 3 minutes
+      score += 3;
+    } else if (durationSeconds > 120) { // Over 2 minutes
+      score += 2;
+    } else if (durationSeconds > 60) { // Over 1 minute
+      score += 1;
+    } else if (durationSeconds < 30) { // Less than 30 seconds
+      score -= 1;
+    }
+  }
+
+  // Factor 3: Transcript length (engagement) (0-2 points)
+  const wordCount = call.transcript.split(/\s+/).length;
+  if (wordCount > 200) { // Long conversation
+    score += 2;
+  } else if (wordCount > 100) { // Moderate conversation
+    score += 1;
+  } else if (wordCount < 20) { // Very short conversation
+    score -= 2;
+  }
+
+  // Factor 4: Basic keyword sentiment analysis (0-1 point)
+  const transcript = call.transcript.toLowerCase();
+  const positiveKeywords = ['yes', 'interested', 'good', 'great', 'thank', 'appreciate', 'perfect', 'excellent', 'sure', 'definitely'];
+  const negativeKeywords = ['no', 'not interested', 'busy', 'stop', 'remove', 'bye', 'goodbye', 'sorry', 'cant', 'don\'t'];
+  
+  let positiveCount = 0;
+  let negativeCount = 0;
+  
+  positiveKeywords.forEach(keyword => {
+    if (transcript.includes(keyword)) positiveCount++;
+  });
+  
+  negativeKeywords.forEach(keyword => {
+    if (transcript.includes(keyword)) negativeCount++;
+  });
+  
+  if (positiveCount > negativeCount + 2) {
+    score += 1;
+  } else if (negativeCount > positiveCount + 2) {
+    score -= 1;
+  }
+
+  // Ensure score is between 1 and 10
+  score = Math.max(1, Math.min(10, Math.round(score)));
+
+  return score;
+}
+
 // Fetch recent calls from Retell AI API using SDK
 app.post('/api/retell/list-calls', async (req, res) => {
   try {
@@ -1574,8 +1642,9 @@ app.post('/api/retell/list-calls', async (req, res) => {
     
     console.log(`✅ Retrieved ${callResponses.length || 0} calls from Retell AI`);
     
-    // Transform the calls to include all necessary fields with async lead scoring
-    const transformedCalls = await Promise.all(callResponses.map(async (call) => ({
+    // Transform the calls to include all necessary fields WITHOUT async lead scoring
+    // Calculate lead scores synchronously to avoid timeout
+    const transformedCalls = callResponses.map((call) => ({
       call_id: call.call_id,
       call_type: call.call_type,
       call_status: call.call_status,
@@ -1591,8 +1660,9 @@ app.post('/api/retell/list-calls', async (req, res) => {
       public_log_url: call.public_log_url,
       agent_id: call.agent_id,
       metadata: call.metadata,
-      lead_score: await calculateLeadScore(call)
-    })));
+      // Use basic lead score calculation without AI sentiment (fast)
+      lead_score: calculateBasicLeadScore(call)
+    }));
     
     console.log(`✅ Transformed ${transformedCalls.length} calls`);
     

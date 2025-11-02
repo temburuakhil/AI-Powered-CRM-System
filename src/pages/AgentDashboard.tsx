@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Phone, RefreshCw, Download, Clock, CheckCircle, XCircle, AlertCircle, ExternalLink, FileText } from 'lucide-react';
+import { Phone, RefreshCw, Download, Clock, CheckCircle, XCircle, AlertCircle, ExternalLink, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import {
   Dialog,
@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface RetellCall {
   call_id: string;
@@ -34,6 +35,10 @@ export default function AgentDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [selectedTranscript, setSelectedTranscript] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     fetchRetellCalls(true); // Show loading on initial fetch
@@ -50,13 +55,13 @@ export default function AgentDashboard() {
     try {
       console.log('📞 Fetching calls from Retell AI...');
       
-      const response = await fetch('http://localhost:3001/api/retell/list-calls', {
+      const response = await fetch('/api/retell/list-calls', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          limit: 20
+          limit: 1000
         })
       });
       
@@ -65,7 +70,7 @@ export default function AgentDashboard() {
       }
       
       const result = await response.json();
-      console.log('✅ Retell calls received:', result.total);
+      console.log('✅ Retell calls received:', result.total || 0);
       
       if (result.success && result.calls) {
         setCalls(result.calls);
@@ -175,6 +180,75 @@ export default function AgentDashboard() {
     }
   };
 
+  // Calculate real-time statistics
+  const calculateStats = () => {
+    const totalCalls = calls.length;
+    const completedCalls = calls.filter(c => c.call_status === 'ended').length;
+    const missedCalls = calls.filter(c => c.call_status === 'not_connected' || c.disconnection_reason === 'dial_no_answer').length;
+    const incomingCalls = calls.filter(c => c.call_type === 'phone_call').length;
+    
+    const totalDuration = calls.reduce((sum, call) => sum + (call.duration_ms || 0), 0);
+    const avgDuration = totalCalls > 0 ? totalDuration / totalCalls : 0;
+    
+    const successfulCalls = calls.filter(c => c.call_analysis?.call_successful === true).length;
+    const successRate = totalCalls > 0 ? (successfulCalls / totalCalls * 100).toFixed(1) : '0';
+    
+    // Calculate lead scores
+    const hotLeads = calls.filter(c => c.lead_score && c.lead_score >= 8).length;
+    const warmLeads = calls.filter(c => c.lead_score && c.lead_score >= 5 && c.lead_score < 8).length;
+    const coldLeads = calls.filter(c => c.lead_score && c.lead_score < 5).length;
+
+    return {
+      totalCalls,
+      completedCalls,
+      missedCalls,
+      incomingCalls,
+      avgDuration,
+      successRate,
+      hotLeads,
+      warmLeads,
+      coldLeads
+    };
+  };
+
+  // Prepare chart data (calls per day)
+  const prepareChartData = () => {
+    const callsByDate = new Map<string, { date: string; calls: number; successful: number; missed: number }>();
+    
+    calls.forEach(call => {
+      const date = new Date(call.start_timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const existing = callsByDate.get(date) || { date, calls: 0, successful: 0, missed: 0 };
+      
+      existing.calls += 1;
+      if (call.call_analysis?.call_successful) existing.successful += 1;
+      if (call.call_status === 'not_connected') existing.missed += 1;
+      
+      callsByDate.set(date, existing);
+    });
+
+    return Array.from(callsByDate.values()).slice(-14); // Last 14 days
+  };
+
+  // Pagination
+  const totalPages = Math.ceil(calls.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCalls = calls.slice(startIndex, endIndex);
+
+  const stats = calculateStats();
+  const chartData = prepareChartData();
+  
+  // Debug logging
+  console.log('🔍 Dashboard State:', {
+    callsCount: calls.length,
+    loading,
+    error,
+    statsTotal: stats.totalCalls,
+    chartDataPoints: chartData.length,
+    currentPage,
+    totalPages
+  });
+
   return (
     <div className="min-h-screen bg-[#0d1117] p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -218,6 +292,160 @@ export default function AgentDashboard() {
           </div>
         </div>
 
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Total Calls */}
+          <Card className="bg-[#161b22] border-[#30363d] p-6 hover:border-blue-500/50 transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-[#7d8590]">Total Calls</p>
+                <h3 className="text-3xl font-bold text-[#e6edf3] mt-2">{stats.totalCalls}</h3>
+                <p className="text-xs text-[#7d8590] mt-1">All time</p>
+              </div>
+              <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                <Phone className="w-6 h-6 text-blue-400" />
+              </div>
+            </div>
+          </Card>
+
+          {/* Completed Calls */}
+          <Card className="bg-[#161b22] border-[#30363d] p-6 hover:border-green-500/50 transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-[#7d8590]">Completed</p>
+                <h3 className="text-3xl font-bold text-[#e6edf3] mt-2">{stats.completedCalls}</h3>
+                <p className="text-xs text-green-400 mt-1">Success rate: {stats.successRate}%</p>
+              </div>
+              <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center border border-green-500/20">
+                <CheckCircle className="w-6 h-6 text-green-400" />
+              </div>
+            </div>
+          </Card>
+
+          {/* Missed Calls */}
+          <Card className="bg-[#161b22] border-[#30363d] p-6 hover:border-red-500/50 transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-[#7d8590]">Missed Calls</p>
+                <h3 className="text-3xl font-bold text-[#e6edf3] mt-2">{stats.missedCalls}</h3>
+                <p className="text-xs text-[#7d8590] mt-1">No answer</p>
+              </div>
+              <div className="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center border border-red-500/20">
+                <XCircle className="w-6 h-6 text-red-400" />
+              </div>
+            </div>
+          </Card>
+
+          {/* Average Duration */}
+          <Card className="bg-[#161b22] border-[#30363d] p-6 hover:border-purple-500/50 transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-[#7d8590]">Avg Duration</p>
+                <h3 className="text-3xl font-bold text-[#e6edf3] mt-2">{Math.round(stats.avgDuration / 1000)}s</h3>
+                <p className="text-xs text-[#7d8590] mt-1">Per call</p>
+              </div>
+              <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                <Clock className="w-6 h-6 text-purple-400" />
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Lead Quality Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-[#161b22] border-[#30363d] p-6 hover:border-emerald-500/50 transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-[#7d8590]">Hot Leads</p>
+                <h3 className="text-2xl font-bold text-[#e6edf3] mt-2">{stats.hotLeads}</h3>
+                <p className="text-xs text-emerald-400 mt-1">Score: 8-10</p>
+              </div>
+              <div className="text-3xl">🔥</div>
+            </div>
+          </Card>
+
+          <Card className="bg-[#161b22] border-[#30363d] p-6 hover:border-yellow-500/50 transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-[#7d8590]">Warm Leads</p>
+                <h3 className="text-2xl font-bold text-[#e6edf3] mt-2">{stats.warmLeads}</h3>
+                <p className="text-xs text-yellow-400 mt-1">Score: 5-7</p>
+              </div>
+              <div className="text-3xl">☀️</div>
+            </div>
+          </Card>
+
+          <Card className="bg-[#161b22] border-[#30363d] p-6 hover:border-cyan-500/50 transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-[#7d8590]">Cold Leads</p>
+                <h3 className="text-2xl font-bold text-[#e6edf3] mt-2">{stats.coldLeads}</h3>
+                <p className="text-xs text-cyan-400 mt-1">Score: 1-4</p>
+              </div>
+              <div className="text-3xl">❄️</div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Call Trends Chart */}
+        <Card className="bg-[#0d1117] border-[#30363d] p-6">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-[#e6edf3]">Call Trends</h2>
+            <p className="text-sm text-[#7d8590] mt-1">Daily call activity over the last 14 days</p>
+          </div>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#7d8590"
+                  style={{ fontSize: '12px' }}
+                />
+                <YAxis 
+                  stroke="#7d8590"
+                  style={{ fontSize: '12px' }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#161b22', 
+                    border: '1px solid #30363d',
+                    borderRadius: '8px',
+                    color: '#e6edf3'
+                  }}
+                />
+                <Legend 
+                  wrapperStyle={{ color: '#e6edf3' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="calls" 
+                  stroke="#8b5cf6" 
+                  strokeWidth={2}
+                  name="Total Calls"
+                  dot={{ fill: '#8b5cf6', r: 4 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="successful" 
+                  stroke="#10b981" 
+                  strokeWidth={2}
+                  name="Successful"
+                  dot={{ fill: '#10b981', r: 4 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="missed" 
+                  stroke="#ef4444" 
+                  strokeWidth={2}
+                  name="Missed"
+                  dot={{ fill: '#ef4444', r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
         {/* Error Display */}
         {error && (
           <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
@@ -235,7 +463,9 @@ export default function AgentDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-[#e6edf3]">Call History</h2>
-                <p className="text-sm text-[#7d8590] mt-1">All calls from Retell AI ({calls.length} total)</p>
+                <p className="text-sm text-[#7d8590] mt-1">
+                  All calls from Retell AI ({calls.length} total) • Page {currentPage} of {totalPages} • 20 per page
+                </p>
               </div>
             </div>
           </div>
@@ -296,7 +526,7 @@ export default function AgentDashboard() {
                     </td>
                   </tr>
                 ) : (
-                  calls.map((call) => (
+                  paginatedCalls.map((call) => (
                     <tr key={call.call_id} className="hover:bg-[#161b22] transition-colors">
                       {/* Time */}
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -426,6 +656,60 @@ export default function AgentDashboard() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {calls.length > 0 && (
+            <div className="px-6 py-4 border-t border-[#30363d] flex items-center justify-between">
+              <div className="text-sm text-[#7d8590]">
+                Showing <span className="font-medium text-[#e6edf3]">{startIndex + 1}</span> to{' '}
+                <span className="font-medium text-[#e6edf3]">{Math.min(endIndex, calls.length)}</span> of{' '}
+                <span className="font-medium text-[#e6edf3]">{calls.length}</span> calls
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 bg-[#21262d] border border-[#30363d] rounded-lg text-[#e6edf3] hover:bg-[#30363d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = currentPage <= 3 
+                      ? i + 1 
+                      : currentPage >= totalPages - 2 
+                        ? totalPages - 4 + i 
+                        : currentPage - 2 + i;
+                    
+                    if (pageNum < 1 || pageNum > totalPages) return null;
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          currentPage === pageNum
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                            : 'bg-[#21262d] border border-[#30363d] text-[#e6edf3] hover:bg-[#30363d]'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 bg-[#21262d] border border-[#30363d] rounded-lg text-[#e6edf3] hover:bg-[#30363d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </Card>
 
         {/* Transcript Dialog */}
