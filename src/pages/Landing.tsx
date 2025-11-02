@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'admin' | 'manager'>('admin');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
@@ -42,20 +41,18 @@ const Landing = () => {
           description: `Welcome back, ${data.user.fullName}!`,
         });
 
-        // Redirect based on role
-        if (data.user.role === 'admin') {
-          navigate('/');
-        } else if (data.user.role === 'manager') {
-          // Redirect managers to their department pages
-          if (data.user.department === 'training') {
-            navigate('/training');
-          } else if (data.user.department === 'egovernance') {
-            navigate('/e-governance');
-          } else {
-            // For custom managers without specific departments, use manager page
-            navigate(`/manager/${data.user.id}`);
+        // Redirect based on role returned from backend
+          if (data.user.role === 'admin') {
+            navigate('/');
+          } else if (data.user.role === 'manager') {
+            if (data.user.department === 'training') {
+              navigate('/training');
+            } else if (data.user.department === 'egovernance') {
+              navigate('/e-governance');
+            } else {
+              navigate(`/manager/${data.user.id}`);
+            }
           }
-        }
       } else {
         toast({
           title: "Login Failed",
@@ -165,35 +162,7 @@ const Landing = () => {
               <p className="text-slate-300 text-lg">Access your dashboard securely</p>
             </div>
 
-            {/* Tab Selection */}
-            <div className="flex gap-3 mb-8 p-1.5 bg-slate-900/80 rounded-xl border border-slate-700/50">
-              <button
-                onClick={() => setActiveTab('admin')}
-                className={`flex-1 py-4 px-6 rounded-lg font-semibold transition-all duration-200 ${
-                  activeTab === 'admin'
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  <span className="text-base">Admin</span>
-                </div>
-              </button>
-              <button
-                onClick={() => setActiveTab('manager')}
-                className={`flex-1 py-4 px-6 rounded-lg font-semibold transition-all duration-200 ${
-                  activeTab === 'manager'
-                    ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-500/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <Users className="w-5 h-5" />
-                  <span className="text-base">Manager</span>
-                </div>
-              </button>
-            </div>
+            {/* Role selection removed: role is assigned server-side for created managers */}
 
             {/* Login Form */}
             <form onSubmit={handleLogin} className="space-y-6">
@@ -206,7 +175,7 @@ const Landing = () => {
                   <Input
                     id="username"
                     type="text"
-                    placeholder={activeTab === 'admin' ? 'Enter admin username' : 'Enter manager username'}
+                    placeholder={'Enter username'}
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                     className="pl-12 bg-slate-900/50 border-slate-700 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 h-14 text-base rounded-xl"
@@ -236,11 +205,7 @@ const Landing = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className={`w-full h-14 text-base font-semibold rounded-xl shadow-lg transition-all duration-200 mt-8 ${
-                  activeTab === 'admin'
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 shadow-blue-500/30 hover:shadow-blue-500/50'
-                    : 'bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 shadow-purple-500/30 hover:shadow-purple-500/50'
-                }`}
+                className={`w-full h-14 text-base font-semibold rounded-xl shadow-lg transition-all duration-200 mt-8 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 shadow-blue-500/30 hover:shadow-blue-500/50`}
               >
                 {loading ? (
                   <div className="flex items-center gap-3">
