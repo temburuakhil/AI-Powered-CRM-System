@@ -178,11 +178,12 @@ const CreateProject = () => {
       return;
     }
 
-    // Validate Google Sheets URL
-    if (!sheetUrl.includes("docs.google.com/spreadsheets")) {
+    // Validate Google Sheets URL format
+    const googleSheetsRegex = /^https:\/\/docs\.google\.com\/spreadsheets\/d\/[a-zA-Z0-9-_]+/;
+    if (!googleSheetsRegex.test(sheetUrl.trim())) {
       toast({
-        title: "Error",
-        description: "Please enter a valid Google Sheets URL",
+        title: "Invalid Google Sheets URL",
+        description: "Please enter a valid Google Sheets URL (e.g., https://docs.google.com/spreadsheets/d/...)",
         variant: "destructive",
       });
       return;
