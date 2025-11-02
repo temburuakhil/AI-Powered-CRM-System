@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
+import LandingPage from "./pages/LandingPage";
 import AdminPortal from "./pages/AdminPortal";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import EGovernance from "./pages/EGovernance";
@@ -24,7 +25,8 @@ const App = () => (
     <Toaster />
     <BrowserRouter>
       <Routes>
-        <Route path="/landing" element={<Landing />} />
+  <Route path="/landing" element={<Landing />} />
+  <Route path="/home" element={<LandingPage />} />
         <Route path="/" element={<AdminPortal />} />
         <Route path="/manager-dashboard" element={<ManagerDashboard />} />
         <Route path="/e-governance" element={<EGovernance />} />
