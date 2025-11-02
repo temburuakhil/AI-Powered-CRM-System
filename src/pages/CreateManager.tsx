@@ -74,10 +74,41 @@ const CreateManager = () => {
       return;
     }
 
+    // Validate password strength
     if (!password.trim() || password.length < 6) {
       toast({
-        title: "Error",
+        title: "Weak Password",
         description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check for capital letter
+    if (!/[A-Z]/.test(password)) {
+      toast({
+        title: "Weak Password",
+        description: "Password must contain at least one uppercase letter",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check for number
+    if (!/[0-9]/.test(password)) {
+      toast({
+        title: "Weak Password",
+        description: "Password must contain at least one number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check for symbol
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      toast({
+        title: "Weak Password",
+        description: "Password must contain at least one special character (!@#$%^&*...)",
         variant: "destructive",
       });
       return;
@@ -312,14 +343,14 @@ const CreateManager = () => {
                 </label>
                 <Input
                   type="password"
-                  placeholder="Minimum 6 characters"
+                  placeholder="e.g., Admin@123"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="text-lg py-6 bg-[#0d1117] border border-[#30363d] text-[#e6edf3] placeholder-[#7d8590] focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]"
                   disabled={isCreating}
                 />
                 <p className="text-xs text-[#7d8590] mt-2">
-                  Must be at least 6 characters long
+                  Must include: uppercase letter, number, special character, min 6 characters
                 </p>
               </div>
             </div>
