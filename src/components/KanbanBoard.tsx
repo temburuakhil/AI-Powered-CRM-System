@@ -68,10 +68,21 @@ export const KanbanBoard = ({ projectId, managerId, isOpen, onClose, data = [] }
   const [editTaskTitle, setEditTaskTitle] = useState("");
   const [editTaskDescription, setEditTaskDescription] = useState("");
   const [editTaskAssignee, setEditTaskAssignee] = useState("");
-  const [editTaskStartDate, setEditTaskStartDate] = useState("");
-  const [editTaskStartTime, setEditTaskStartTime] = useState("");
-  const [editTaskEndDate, setEditTaskEndDate] = useState("");
-  const [editTaskEndTime, setEditTaskEndTime] = useState("");
+  
+  // Get current date and time for defaults
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const time = now.toTimeString().slice(0, 5); // HH:MM
+    return { date, time };
+  };
+  
+  const { date: currentDate, time: currentTime } = getCurrentDateTime();
+  
+  const [editTaskStartDate, setEditTaskStartDate] = useState(currentDate);
+  const [editTaskStartTime, setEditTaskStartTime] = useState(currentTime);
+  const [editTaskEndDate, setEditTaskEndDate] = useState(currentDate);
+  const [editTaskEndTime, setEditTaskEndTime] = useState(currentTime);
   const [showEditCustomAssignee, setShowEditCustomAssignee] = useState(false);
   
   const { toast } = useToast();
@@ -1325,7 +1336,16 @@ Return ONLY a valid JSON array with this exact structure (no additional text):
                     <Input
                       type="date"
                       value={editTaskStartDate}
-                      onChange={(e) => setEditTaskStartDate(e.target.value)}
+                      min={currentDate}
+                      onChange={(e) => {
+                        const selectedDate = e.target.value;
+                        setEditTaskStartDate(selectedDate);
+                        
+                        // If end date is before new start date, update end date
+                        if (editTaskEndDate && editTaskEndDate < selectedDate) {
+                          setEditTaskEndDate(selectedDate);
+                        }
+                      }}
                       className="bg-[#010409] border-[#30363d] text-[#e6edf3] [color-scheme:dark]"
                       placeholder="dd-mm-yyyy"
                     />
@@ -1335,7 +1355,26 @@ Return ONLY a valid JSON array with this exact structure (no additional text):
                     <Input
                       type="time"
                       value={editTaskStartTime}
-                      onChange={(e) => setEditTaskStartTime(e.target.value)}
+                      onChange={(e) => {
+                        const selectedTime = e.target.value;
+                        setEditTaskStartTime(selectedTime);
+                        
+                        // If start date is today and selected time is before current time, show warning
+                        if (editTaskStartDate === currentDate && selectedTime < currentTime) {
+                          toast({
+                            title: "Invalid Time",
+                            description: "Start time cannot be in the past",
+                            variant: "destructive",
+                          });
+                          setEditTaskStartTime(currentTime);
+                          return;
+                        }
+                        
+                        // If end date/time is before start date/time, update end time
+                        if (editTaskStartDate === editTaskEndDate && editTaskEndTime < selectedTime) {
+                          setEditTaskEndTime(selectedTime);
+                        }
+                      }}
                       className="bg-[#010409] border-[#30363d] text-[#e6edf3] [color-scheme:dark]"
                       placeholder="--:--"
                     />
@@ -1349,7 +1388,22 @@ Return ONLY a valid JSON array with this exact structure (no additional text):
                     <Input
                       type="date"
                       value={editTaskEndDate}
-                      onChange={(e) => setEditTaskEndDate(e.target.value)}
+                      min={editTaskStartDate}
+                      onChange={(e) => {
+                        const selectedDate = e.target.value;
+                        
+                        // Validate end date is not before start date
+                        if (selectedDate < editTaskStartDate) {
+                          toast({
+                            title: "Invalid Date",
+                            description: "End date cannot be before start date",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
+                        setEditTaskEndDate(selectedDate);
+                      }}
                       className="bg-[#010409] border-[#30363d] text-[#e6edf3] [color-scheme:dark]"
                       placeholder="dd-mm-yyyy"
                     />
@@ -1359,7 +1413,21 @@ Return ONLY a valid JSON array with this exact structure (no additional text):
                     <Input
                       type="time"
                       value={editTaskEndTime}
-                      onChange={(e) => setEditTaskEndTime(e.target.value)}
+                      onChange={(e) => {
+                        const selectedTime = e.target.value;
+                        
+                        // Validate end time is not before start time on the same day
+                        if (editTaskStartDate === editTaskEndDate && selectedTime < editTaskStartTime) {
+                          toast({
+                            title: "Invalid Time",
+                            description: "End time cannot be before start time on the same day",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
+                        setEditTaskEndTime(selectedTime);
+                      }}
                       className="bg-[#010409] border-[#30363d] text-[#e6edf3] [color-scheme:dark]"
                       placeholder="--:--"
                     />
