@@ -63,16 +63,16 @@ const Sidebar: React.FC<SidebarProps> = ({ customManagers, onDeleteManager, isCo
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {!isCollapsed && <div className="px-3 py-2 text-xs font-semibold text-[#7d8590] uppercase tracking-wider">Main</div>}
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/admin")}
           className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
-            isActive('/') 
+            isActive('/admin') 
               ? 'text-[#e6edf3] bg-[#1c2128] font-medium' 
               : 'text-[#7d8590] hover:bg-[#1c2128] hover:text-[#e6edf3]'
           }`}
           title="Dashboard"
         >
           <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
-          {!isCollapsed && <span className={isActive('/') ? 'font-medium' : ''}>Dashboard</span>}
+          {!isCollapsed && <span className={isActive('/admin') ? 'font-medium' : ''}>Dashboard</span>}
         </button>
 
         {!isCollapsed && <div className="px-3 py-2 text-xs font-semibold text-[#7d8590] uppercase tracking-wider mt-4">Modules</div>}
