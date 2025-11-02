@@ -25,9 +25,9 @@ const App = () => (
     <Toaster />
     <BrowserRouter>
       <Routes>
-  <Route path="/landing" element={<Landing />} />
-  <Route path="/home" element={<LandingPage />} />
-        <Route path="/" element={<AdminPortal />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/landing" element={<Landing />} />
+        <Route path="/admin" element={<AdminPortal />} />
         <Route path="/manager-dashboard" element={<ManagerDashboard />} />
         <Route path="/e-governance" element={<EGovernance />} />
         <Route path="/training" element={<Training />} />

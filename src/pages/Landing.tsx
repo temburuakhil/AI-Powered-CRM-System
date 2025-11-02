@@ -44,7 +44,7 @@ const Landing = () => {
 
         // Redirect based on role returned from backend
           if (data.user.role === 'admin') {
-            navigate('/');
+            navigate('/admin');
           } else if (data.user.role === 'manager') {
             if (data.user.department === 'training') {
               navigate('/training');
