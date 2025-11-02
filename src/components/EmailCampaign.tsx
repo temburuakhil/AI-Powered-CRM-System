@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Sparkles, Send, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Mail, Sparkles, Send, Loader2, CheckCircle2, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +38,7 @@ export const EmailCampaign = ({
 }: EmailCampaignProps) => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [showSmtpConfig, setShowSmtpConfig] = useState(false);
   const [smtpConfig, setSmtpConfig] = useState({
     host: "smtp.gmail.com",
     port: "587",
@@ -371,55 +372,73 @@ export const EmailCampaign = ({
 
           {/* SMTP Configuration */}
           <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-blue-200 dark:border-blue-800">
-            <div className="flex items-center gap-2 mb-3">
-              <Send className="w-5 h-5 text-blue-600" />
-              <h3 className="font-semibold text-lg">SMTP Configuration</h3>
+            <div 
+              className="flex items-center justify-between cursor-pointer"
+              onClick={() => setShowSmtpConfig(!showSmtpConfig)}
+            >
+              <div className="flex items-center gap-2">
+                <Send className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-lg">SMTP Configuration</h3>
+              </div>
+              <button
+                type="button"
+                className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-md transition-colors"
+              >
+                {showSmtpConfig ? (
+                  <ChevronUp className="w-5 h-5 text-blue-600" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-blue-600" />
+                )}
+              </button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label className="text-sm font-medium mb-1 block">Email Address</label>
-                <Input
-                  type="email"
-                  placeholder="your.email@gmail.com"
-                  value={smtpConfig.user}
-                  onChange={(e) => setSmtpConfig({ ...smtpConfig, user: e.target.value })}
-                />
+            
+            {showSmtpConfig && (
+              <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
+                <div className="col-span-2">
+                  <label className="text-sm font-medium mb-1 block">Email Address</label>
+                  <Input
+                    type="email"
+                    placeholder="your.email@gmail.com"
+                    value={smtpConfig.user}
+                    onChange={(e) => setSmtpConfig({ ...smtpConfig, user: e.target.value })}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium mb-1 block">App Password</label>
+                  <Input
+                    type="password"
+                    placeholder="xxxx xxxx xxxx xxxx"
+                    value={smtpConfig.password}
+                    onChange={(e) => setSmtpConfig({ ...smtpConfig, password: e.target.value })}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    For Gmail, use an{" "}
+                    <a
+                      href="https://support.google.com/accounts/answer/185833"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      App Password
+                    </a>
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">SMTP Host</label>
+                  <Input
+                    value={smtpConfig.host}
+                    onChange={(e) => setSmtpConfig({ ...smtpConfig, host: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Port</label>
+                  <Input
+                    value={smtpConfig.port}
+                    onChange={(e) => setSmtpConfig({ ...smtpConfig, port: e.target.value })}
+                  />
+                </div>
               </div>
-              <div className="col-span-2">
-                <label className="text-sm font-medium mb-1 block">App Password</label>
-                <Input
-                  type="password"
-                  placeholder="xxxx xxxx xxxx xxxx"
-                  value={smtpConfig.password}
-                  onChange={(e) => setSmtpConfig({ ...smtpConfig, password: e.target.value })}
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  For Gmail, use an{" "}
-                  <a
-                    href="https://support.google.com/accounts/answer/185833"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    App Password
-                  </a>
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">SMTP Host</label>
-                <Input
-                  value={smtpConfig.host}
-                  onChange={(e) => setSmtpConfig({ ...smtpConfig, host: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Port</label>
-                <Input
-                  value={smtpConfig.port}
-                  onChange={(e) => setSmtpConfig({ ...smtpConfig, port: e.target.value })}
-                />
-              </div>
-            </div>
+            )}
           </Card>
 
           {/* Email Content */}
