@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Briefcase, Bell, FolderPlus } from "lucide-react";
+import { Plus, Briefcase, Bell, FolderPlus, Eye, EyeOff } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import SearchBar from "@/components/SearchBar";
 
@@ -15,6 +15,7 @@ const CreateManager = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [customManagers, setCustomManagers] = useState<Array<{id: string; name: string; projects: any[]}>>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -341,14 +342,28 @@ const CreateManager = () => {
                 <label className="block text-sm font-semibold text-[#e6edf3] mb-2">
                   Password
                 </label>
-                <Input
-                  type="password"
-                  placeholder="e.g., Admin@123"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="text-lg py-6 bg-[#0d1117] border border-[#30363d] text-[#e6edf3] placeholder-[#7d8590] focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]"
-                  disabled={isCreating}
-                />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="e.g., Admin@123"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="text-lg py-6 pr-12 bg-[#0d1117] border border-[#30363d] text-[#e6edf3] placeholder-[#7d8590] focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff]"
+                    disabled={isCreating}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7d8590] hover:text-[#58a6ff] transition-colors focus:outline-none"
+                    disabled={isCreating}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
                 <p className="text-xs text-[#7d8590] mt-2">
                   Must include: uppercase letter, number, special character, min 6 characters
                 </p>
