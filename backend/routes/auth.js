@@ -115,6 +115,18 @@ router.post('/create-manager', isAdmin, async (req, res) => {
       });
     }
 
+    // Check if manager name (fullName) already exists
+    const existingFullName = await User.findOne({ 
+      fullName: { $regex: new RegExp(`^${fullName}$`, 'i') },
+      role: 'manager'
+    });
+    if (existingFullName) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'A manager with this name already exists' 
+      });
+    }
+
     // Create new manager
     const newManager = new User({
       username: username.toLowerCase(),

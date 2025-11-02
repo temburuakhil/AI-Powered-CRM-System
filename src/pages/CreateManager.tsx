@@ -72,6 +72,48 @@ const CreateManager = () => {
       return;
     }
 
+    // Check for duplicates in localStorage
+    const existingManagers = JSON.parse(localStorage.getItem("customManagers") || "[]");
+    
+    // Check duplicate name
+    const duplicateName = existingManagers.find(
+      (m: any) => m.name.toLowerCase() === managerName.trim().toLowerCase()
+    );
+    if (duplicateName) {
+      toast({
+        title: "Duplicate Manager Name",
+        description: "A manager with this name already exists. Please choose a different name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check duplicate username
+    const duplicateUsername = existingManagers.find(
+      (m: any) => m.username?.toLowerCase() === username.trim().toLowerCase()
+    );
+    if (duplicateUsername) {
+      toast({
+        title: "Duplicate Username",
+        description: "This username is already taken. Please choose a different username.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check duplicate email
+    const duplicateEmail = existingManagers.find(
+      (m: any) => m.email?.toLowerCase() === email.trim().toLowerCase()
+    );
+    if (duplicateEmail) {
+      toast({
+        title: "Duplicate Email",
+        description: "This email is already registered. Please use a different email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCreating(true);
 
     try {
