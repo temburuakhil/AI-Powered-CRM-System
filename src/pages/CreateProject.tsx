@@ -109,15 +109,14 @@ const CreateProject = () => {
     const files = Array.from(e.dataTransfer.files);
     const validFiles = files.filter(file => 
       file.type === 'application/pdf' || 
-      file.type === 'text/plain' || 
       file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
       file.type === 'application/msword'
     );
 
     if (validFiles.length !== files.length) {
       toast({
-        title: "Invalid Files",
-        description: "Only PDF, TXT, and DOC files are allowed",
+        title: "Invalid File Type",
+        description: "Only .pdf, .doc, and .docx files are supported",
         variant: "destructive",
       });
     }
@@ -128,7 +127,23 @@ const CreateProject = () => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      setKnowledgeBaseFiles(prev => [...prev, ...files]);
+      const validFiles = files.filter(file => 
+        file.type === 'application/pdf' || 
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        file.type === 'application/msword'
+      );
+
+      if (validFiles.length !== files.length) {
+        toast({
+          title: "Invalid File Type",
+          description: "Only .pdf, .doc, and .docx files are supported",
+          variant: "destructive",
+        });
+      }
+
+      if (validFiles.length > 0) {
+        setKnowledgeBaseFiles(prev => [...prev, ...validFiles]);
+      }
     }
   };
 
@@ -411,7 +426,7 @@ const CreateProject = () => {
                     ref={fileInputRef}
                     type="file"
                     multiple
-                    accept=".pdf,.txt,.doc,.docx"
+                    accept=".pdf,.doc,.docx"
                     onChange={handleFileSelect}
                     className="hidden"
                   />
@@ -434,7 +449,7 @@ const CreateProject = () => {
                         {isDragging ? "Drop files here" : "Drag & drop files or click to browse"}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        Supported: PDF, TXT, DOC, DOCX (Max 10MB each)
+                        Supported: .pdf file, .doc file, .docx file (Max 10MB each)
                       </p>
                     </div>
                   </div>
