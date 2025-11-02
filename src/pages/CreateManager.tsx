@@ -63,6 +63,17 @@ const CreateManager = () => {
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address (e.g., user@example.com)",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!password.trim() || password.length < 6) {
       toast({
         title: "Error",
