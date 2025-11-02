@@ -224,7 +224,7 @@ const CreateManager = () => {
 
       setTimeout(() => {
         setIsCreating(false);
-        navigate("/");
+        navigate("/admin");
       }, 1500);
     } catch (error) {
       console.error('Create manager error:', error);
@@ -418,7 +418,7 @@ const CreateManager = () => {
                 )}
               </Button>
               <Button
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/admin")}
                 variant="outline"
                 className="px-8 py-6 text-lg bg-[#21262d] border border-[#30363d] text-[#e6edf3] hover:bg-[#30363d] hover:border-[#58a6ff]"
                 disabled={isCreating}
