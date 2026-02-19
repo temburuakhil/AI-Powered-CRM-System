@@ -44,21 +44,7 @@ A comprehensive AI-powered CRM system featuring multi-channel outreach capabilit
 - Google Sheets API
 - Nodemailer (SMTP)
 
-## 🔐 Sample Login Credentials
-
-### Admin Portal
-- **Email:** `admin@gmail.com`
-- **Password:** `admin123`
-
-### Manager Portal
-- **Email:** `manager@gmail.com`
-- **Password:** `manager123`
-
-### Agent Dashboard
-- **Email:** `agent@gmail.com`
-- **Password:** `agent123`
-
-## 📦 Installation
+##  Installation
 
 ```bash
 # Clone the repository
