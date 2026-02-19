@@ -1,4 +1,4 @@
-# E-Governance Management Platform 📊
+# AI-Powered CRM System 📊
 
 ![Status](https://img.shields.io/badge/Status-Live-success)
 ![License](https://img.shields.io/badge/License-MIT-blue)
@@ -7,7 +7,7 @@
 
 ## 📖 About The Project
 
-A comprehensive real-time government services management platform featuring AI-powered multi-channel outreach capabilities, live data synchronization, and intelligent document assistance. Built to streamline management of schemes, scholarships, training programs, and citizen registrations.
+A comprehensive AI-powered CRM system featuring multi-channel outreach capabilities, real-time data synchronization, and intelligent document assistance. Built to streamline management of leads, campaigns, training programs, and customer registrations with automated workflows.
 
 ### 🎯 Key Features
 
@@ -62,8 +62,8 @@ A comprehensive real-time government services management platform featuring AI-p
 
 ```bash
 # Clone the repository
-git clone https://github.com/temburuakhil/BPUT-Hackathon.git
-cd BPUT-Hackathon
+git clone https://github.com/temburuakhil/AI-Powered-CRM-System.git
+cd AI-Powered-CRM-System
 
 # Install frontend dependencies
 npm install
