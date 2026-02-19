@@ -1,171 +1,124 @@
-# OCAC Training Manager 📊# BPUT Hackathon Project
+# E-Governance Management Platform 📊
 
-
-
-A modern, real-time training management dashboard built for OCAC (Odisha Computer Application Centre) with live data synchronization from Google Sheets.## Project Setup
-
-
-
-![OCAC Training Manager](https://img.shields.io/badge/Status-Live-success)This project is built with:
-
+![Status](https://img.shields.io/badge/Status-Live-success)
 ![License](https://img.shields.io/badge/License-MIT-blue)
+![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript)
 
-![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)- Vite
+## 📖 About The Project
 
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript)- TypeScript
+A comprehensive real-time government services management platform featuring AI-powered multi-channel outreach capabilities, live data synchronization, and intelligent document assistance. Built to streamline management of schemes, scholarships, training programs, and citizen registrations.
 
-- React
+### 🎯 Key Features
 
-## ✨ Features- shadcn-ui
+- **Real-time Data Sync** - Live Google Sheets synchronization with 5-second refresh intervals
+- **AI-Powered Chatbot** - DocuRAG chatbot using FAISS vector store and Sentence Transformers for semantic document search
+- **Multi-Channel Outreach** - Automated campaigns via SMS, WhatsApp, Email, and Voice using n8n workflows
+- **Voice Campaigns** - Retell AI integration for intelligent phone-based outreach with real-time transcription
+- **Smart Workflow** - Kanban board for application tracking and status management
+- **Calendar Integration** - Google Calendar sync for scheduling and tracking
+- **Content Generation** - Gemini AI for automated email and message content creation
+- **Modern UI** - Beautiful, responsive design with dark mode support
 
-- Tailwind CSS
+## 🚀 Tech Stack
 
-- 🔄 **Real-time Synchronization** - Auto-refreshes data every 5 seconds
+**Frontend:**
+- React 18.3 + TypeScript + Vite
+- Tailwind CSS 3.4 + shadcn/ui (Radix UI)
+- Lucide Icons, PapaParse
 
-- 🔍 **Instant Search** - Search across all training records## Installation
+**Backend:**
+- Node.js + Express
+- MongoDB with Mongoose
+- Passport.js for authentication
 
-- 📊 **Sortable Columns** - Click any column header to sort
+**AI/ML:**
+- Flask + Python
+- FAISS vector store
+- Sentence Transformers (all-MiniLM-L6-v2)
+- Gemini AI API
+- Retell AI SDK
 
-- 🎨 **Modern UI** - Beautiful, Notion-inspired design with glass morphism```sh
+**Automation:**
+- n8n workflow automation
+- Google Sheets API
+- Nodemailer (SMTP)
 
-- 🌓 **Dark Mode Support** - Seamless light and dark themes# Install dependencies
+## 🔐 Sample Login Credentials
 
-- ⚡ **Lightning Fast** - Built with Vite for optimal performancenpm install
+### Admin Portal
+- **Email:** `admin@gmail.com`
+- **Password:** `admin123`
 
-- 📱 **Responsive Design** - Works perfectly on all devices
+### Manager Portal
+- **Email:** `manager@gmail.com`
+- **Password:** `manager123`
 
-# Start the development server
-
-## 🚀 Tech Stacknpm run dev
-
-```
-
-- **Frontend Framework:** React 18.3 with TypeScript
-
-- **Build Tool:** Vite 5.4## Available Scripts
-
-- **Styling:** Tailwind CSS 3.4 with custom design system
-
-- **UI Components:** shadcn/ui (Radix UI primitives)- `npm run dev` - Start the development server
-
-- **Data Source:** Google Sheets (real-time CSV sync)- `npm run build` - Build for production
-
-- **CSV Parser:** PapaParse- `npm run preview` - Preview production build locally
-
-- **Font:** Inter (Google Fonts)- `npm run lint` - Run ESLint
-
-- **Icons:** Lucide React
+### Agent Dashboard
+- **Email:** `agent@gmail.com`
+- **Password:** `agent123`
 
 ## 📦 Installation
 
 ```bash
 # Clone the repository
 git clone https://github.com/temburuakhil/BPUT-Hackathon.git
-
-# Navigate to project directory
 cd BPUT-Hackathon
 
-# Install dependencies
+# Install frontend dependencies
 npm install
 
-# Start development server
+# Install backend dependencies
+cd backend
+npm install
+cd ..
+
+# Install Python dependencies for DocuRAG
+cd docurag
+pip install -r requirements.txt
+cd ..
+
+# Start frontend (http://localhost:8081)
 npm run dev
+
+# Start backend (http://localhost:3001)
+cd backend
+node server.js
+
+# Start DocuRAG chatbot (http://localhost:5000)
+cd docurag
+python app.py
 ```
 
-The application will be available at `http://localhost:8080`
+## ✨ Features Overview
 
-## 🛠️ Available Scripts
+### 📊 Dashboard Management
+- Real-time data visualization with sortable, searchable tables
+- Instant filtering and sorting across all records
+- Export and import capabilities via Google Sheets
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server with hot reload |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview production build locally |
-| `npm run lint` | Run ESLint for code quality |
+### 🤖 AI Document Assistant (DocuRAG)
+- Upload and process PDF, DOC, DOCX, TXT, JSON, CSV files (40MB max)
+- Semantic search using FAISS vector store
+- Context-aware Q&A with chat history
+- Adjustable response detail levels
 
-## 🎯 Configuration
+### 📢 Multi-Channel Campaigns
+- **Email Campaigns** - SMTP-based bulk emails with AI-generated content
+- **SMS Campaigns** - n8n webhook automation for SMS delivery
+- **WhatsApp Campaigns** - Automated WhatsApp messaging
+- **Voice Campaigns** - Retell AI for intelligent phone outreach with transcription
 
-### Google Sheets Setup
+### 📅 Calendar Integration
+- Google Calendar sync for appointments
+- Automated scheduling for training sessions
+- Real-time availability tracking
 
-1. Open your Google Sheet
-2. Go to **File → Share → Publish to web**
-3. Select **Entire Document** and **Comma-separated values (.csv)**
-4. Click **Publish** and copy the URL
-5. Update the `SHEET_URL` constant in `src/pages/Index.tsx`
-
-```typescript
-const SHEET_URL = "YOUR_GOOGLE_SHEETS_URL_HERE";
-```
-
-## 🎨 Design System
-
-The application features a custom design system inspired by modern SaaS applications:
-
-- **Color Palette:** Blue to purple gradients with slate neutrals
-- **Typography:** Inter font family with optimized OpenType features
-- **Shadows:** Multi-layered shadows for depth
-- **Animations:** Smooth transitions and micro-interactions
-- **Spacing:** Consistent 8px grid system
-
-## 📁 Project Structure
-
-```
-BPUT-Hackathon/
-├── src/
-│   ├── components/
-│   │   ├── DataTable.tsx       # Main data table component
-│   │   └── ui/                 # shadcn/ui components
-│   ├── pages/
-│   │   └── Index.tsx           # Main page with data sync
-│   ├── lib/
-│   │   └── utils.ts            # Utility functions
-│   ├── hooks/
-│   │   └── use-toast.ts        # Toast notifications
-│   ├── index.css               # Global styles & design system
-│   └── main.tsx                # Application entry point
-├── public/
-│   ├── favicon.ico             # App favicon
-│   └── robots.txt              # SEO configuration
-└── index.html                  # HTML template
-```
-
-## 🔧 Key Features Implementation
-
-### Real-time Data Sync
-- Fetches data from Google Sheets every 5 seconds
-- Automatic retry on connection failure
-- Loading and error states with beautiful UI
-
-### Search & Filter
-- Instant client-side search across all columns
-- Preserves sort state during search
-- Highlights matching records
-
-### Sortable Columns
-- Click any column header to sort
-- Toggle between ascending and descending
-- Visual indicators for sort direction
-
-## 🌟 Browser Support
-
-- ✅ Chrome (recommended)
-- ✅ Firefox
-- ✅ Safari
-- ✅ Edge
-- ✅ Opera
-
-## 👥 Team
-
-Built for BPUT Hackathon by Team OCAC
+### 🎯 Workflow Management
+- Kanban board for application tracking
+- Status updates across registration pipeline
+- Approval/rejection workflows with automated notifications
 
 ## 📄 License
 
 This project is licensed under the MIT License.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
----
-
-**Made with ❤️ for OCAC Training Management**
